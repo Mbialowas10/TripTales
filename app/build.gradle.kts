@@ -73,7 +73,7 @@ dependencies {
     implementation(libs.converter.gson)     // Gson converter for Retrofit
     implementation(libs.androidx.room.runtime)                // Room for local database
     ksp(libs.androidx.room.compiler)
-    implementation(libs.androidx.lifecycle.viewmodel.compose) // ViewModel integration for Compose
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.places)
     implementation(libs.play.services.maps.v1802)
     implementation(libs.play.services.location)
