@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import eric.triptales.api.Geometry
 import eric.triptales.api.Location
+import eric.triptales.api.PlaceDetailResult
 import eric.triptales.api.PlaceResult
 import eric.triptales.api.RetrofitInstance
 import eric.triptales.database.AppDatabase
@@ -15,41 +16,74 @@ import kotlinx.coroutines.launch
 
 class PlacesViewModel(application: Application) : AndroidViewModel(application) {
     private val placeDao = AppDatabase.getDatabase(application).placeDao()
-    val nearbyAttractions = mutableStateOf<List<PlaceResult>>(listOf())
+    private val API_KEY = "AIzaSyBQtniS0NCgJc5D5g_t_ke42u5_ttYn4Rw"
 
-    fun getNearbyAttractions(lat: Double, lng: Double, apiKey: String) {
+    val nearbyAttractions = mutableStateOf<List<PlaceResult>>(listOf())
+    val autocompleteResults = mutableStateOf<List<PlaceResult>>(listOf())
+
+    fun getNearbyAttractions(lat: Double, lng: Double) {
         viewModelScope.launch {
             try {
-                // Step 1: Fetch data from Room database (local cache)
-                val cachedPlaces = placeDao.getPlacesByLocation(lat, lng)
-                if (cachedPlaces.isNotEmpty()) {
-                    // Use cached data if available
-                    nearbyAttractions.value = cachedPlaces.map {
-                        PlaceResult(it.name, Geometry(Location(it.latitude, it.longitude)), it.rating, it.address)
-                    }
-                } else {
+
                     // Step 2: Fetch data from Google Places API if no cache available
                     val response = RetrofitInstance.api.getNearbyAttractions(
                         location = "$lat,$lng",
                         radius = 5000,
-                        apiKey = apiKey
+                        apiKey = API_KEY
                     )
                     nearbyAttractions.value = response.results
 
-                    // Step 3: Cache the results in Room database
-                    val placesToCache = response.results.map { place ->
-                        PlaceEntity(
-                            id = "${place.geometry.location.lat}_${place.geometry.location.lng}",
-                            name = place.name,
-                            latitude = place.geometry.location.lat,
-                            longitude = place.geometry.location.lng,
-                            rating = place.rating,
-                            address = place.vicinity,
-                            timestamp = System.currentTimeMillis()
-                        )
-                    }
-                    placeDao.insertAll(placesToCache)
+
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    // return list of suggestions with place ID for further search
+    fun findPlaceAutocomplete(searchTerm: String, placeTypes: String) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitInstance.api.getAutocompleteResults(
+                    input = searchTerm,
+                    types = placeTypes,
+                    apiKey = API_KEY
+                )
+
+                autocompleteResults.value = response.predictions.map { prediction ->
+                    PlaceResult(
+                        name = prediction.description,
+                        geometry = Geometry(Location(0.0, 0.0)),
+                        rating = 0.0,
+                        vicinity = prediction.description
+                    )
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun savePlaceToDB(placeDetailResult: PlaceDetailResult){
+        viewModelScope.launch {
+            try {
+                // Convert PlaceResult to PlaceEntity
+                val placeEntity = PlaceEntity(
+                    id = placeDetailResult.place_id,
+                    name = placeDetailResult.name,
+                    latitude = placeDetailResult.geometry.location.lat,
+                    longitude = placeDetailResult.geometry.location.lng,
+                    rating = placeDetailResult.rating,
+                    address = placeDetailResult.formatted_address ?: "",
+                    category = placeDetailResult.types ?: emptyList() ,
+                    formatted_phone_number = placeDetailResult.formatted_phone_number ?: "",
+                    website = placeDetailResult.website ?: "",
+                    saved_at = System.currentTimeMillis()
+                )
+
+                // Insert the PlaceEntity into the Room database
+                placeDao.insertAll(listOf(placeEntity))
             } catch (e: Exception) {
                 e.printStackTrace()
             }

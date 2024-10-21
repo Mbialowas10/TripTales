@@ -12,4 +12,7 @@ interface PlaceDao {
 
     @Query("SELECT * FROM places WHERE latitude = :lat AND longitude = :lng")
     suspend fun getPlacesByLocation(lat: Double, lng: Double): List<PlaceEntity>
+
+    @Query("SELECT * FROM places")
+    suspend fun getAllPlaces(): List<PlaceEntity>
 }

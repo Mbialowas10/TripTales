@@ -11,5 +11,8 @@ data class PlaceEntity(
     val longitude: Double,
     val rating: Double?,
     val address: String,
-    val timestamp: Long
+    val category: List<String>?,
+    val formatted_phone_number: String?,
+    val website: String?,
+    val saved_at: Long
 )
