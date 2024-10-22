@@ -1,6 +1,8 @@
 package eric.triptales.viewmodel
 
 import android.app.Application
+import android.util.Log
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,28 +23,15 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
     val nearbyAttractions = mutableStateOf<List<PlaceResult>>(listOf())
     val autocompleteResults = mutableStateOf<List<PlaceResult>>(listOf())
 
-    fun getNearbyAttractions(lat: Double, lng: Double) {
-        viewModelScope.launch {
-            try {
+    // Search
+    private val _searchTerm = mutableStateOf("")
+    val searchQuery: State<String> = _searchTerm
 
-                    // Step 2: Fetch data from Google Places API if no cache available
-                    val response = RetrofitInstance.api.getNearbyAttractions(
-                        location = "$lat,$lng",
-                        radius = 5000,
-                        apiKey = API_KEY
-                    )
-                    nearbyAttractions.value = response.results
-
-
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
+    val targetPlace = mutableStateOf<PlaceDetailResult?>(null)
 
     // return list of suggestions with place ID for further search
-    fun findPlaceAutocomplete(searchTerm: String, placeTypes: String) {
+    fun findPlaceAutocomplete(searchTerm: String, placeTypes: String = "establishment") {
+        _searchTerm.value = searchTerm
         viewModelScope.launch {
             try {
                 val response = RetrofitInstance.api.getAutocompleteResults(
@@ -54,11 +43,51 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
                 autocompleteResults.value = response.predictions.map { prediction ->
                     PlaceResult(
                         name = prediction.description,
+                        placeId = prediction.place_id,
                         geometry = Geometry(Location(0.0, 0.0)),
                         rating = 0.0,
                         vicinity = prediction.description
                     )
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun getPlaceDetail(placeId: String){
+        viewModelScope.launch {
+            try {
+                val response = RetrofitInstance.api.getPlaceDetails(
+                    placeId = placeId,
+                    apiKey = API_KEY
+                )
+                val latitude = response.result.geometry.location.lat
+                val longitude = response.result.geometry.location.lng
+
+                targetPlace.value = response.result
+
+                savePlaceToDB(response.result)
+
+                // Now use latitude and longitude for your nearby search
+                getNearbyAttractions(latitude, longitude)
+
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun getNearbyAttractions(lat: Double, lng: Double) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitInstance.api.getNearbyAttractions(
+                    location = "$lat,$lng",
+                    radius = 5000,
+                    apiKey = API_KEY
+                )
+                nearbyAttractions.value = response.results
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -79,6 +108,7 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
                     category = placeDetailResult.types ?: emptyList() ,
                     formatted_phone_number = placeDetailResult.formatted_phone_number ?: "",
                     website = placeDetailResult.website ?: "",
+                    is_saved = true,
                     saved_at = System.currentTimeMillis()
                 )
 

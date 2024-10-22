@@ -78,5 +78,6 @@ dependencies {
     implementation(libs.play.services.maps.v1802)
     implementation(libs.play.services.location)
     implementation(libs.androidx.room.ktx)
-
+    implementation(libs.compose.material3)
+    implementation(libs.compose.navigation)
 }
