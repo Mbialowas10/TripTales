@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import eric.triptales.components.TopAppBar
 import eric.triptales.components.BottomNavigationBar
@@ -34,11 +35,11 @@ fun SearchScreen(navController: NavController, placesViewModel: PlacesViewModel)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Gray),
+                    .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
                 if(places.isEmpty()){
-                    Text("No results found", modifier = Modifier.fillMaxSize())
+                    Text("No results found", modifier = Modifier.fillMaxSize().padding(horizontal = 0.dp, vertical = 10.dp))
                 } else {
                     ListOfPlaces(places = places, "autocomplete" ,placesViewModel, navController)
                 }

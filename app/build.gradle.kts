@@ -80,4 +80,5 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.navigation)
     implementation(libs.coil.compose)
+    implementation(libs.accompanist.pager)
 }

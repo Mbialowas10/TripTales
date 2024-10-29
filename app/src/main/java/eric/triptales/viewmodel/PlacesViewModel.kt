@@ -36,7 +36,7 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
     val isSaved = mutableStateOf(false)
 
     // return list of suggestions with place ID for further search
-    fun findPlaceAutocomplete(searchTerm: String, placeTypes: String = "geocode") {
+    fun findPlaceAutocomplete(searchTerm: String, placeTypes: String) {
         _searchTerm.value = searchTerm
         viewModelScope.launch {
             try {
@@ -80,7 +80,8 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
                         types = result.types,
                         formatted_phone_number = result.formatted_phone_number,
                         website = result.website,
-                        photos = result.photos
+                        photos = result.photos,
+                        reviews = result.reviews
                     )
                 }
 
