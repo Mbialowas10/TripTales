@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import eric.triptales.screens.NearBySearchScreen
+import eric.triptales.screens.PlaceDetailScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,6 +36,7 @@ fun App(placesViewModel: PlacesViewModel) {
         composable("search") { SearchScreen(navController, placesViewModel) }
         composable("nearbySearch") { NearBySearchScreen(navController = navController,
             placesViewModel = placesViewModel)}
+        composable("placeDetail") { PlaceDetailScreen(navController = navController, viewModel = placesViewModel)}
 //        composable("blog") { BlogScreen(navController) }
 //        composable("saved") { SavedPlacesScreen(navController) }
     }

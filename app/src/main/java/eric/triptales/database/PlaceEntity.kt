@@ -16,6 +16,7 @@ data class PlaceEntity(
     val category: List<String>?,
     val formatted_phone_number: String?,
     val website: String?,
+    val photos: List<String>?,
     val is_saved: Boolean,
     val saved_at: Long
 )

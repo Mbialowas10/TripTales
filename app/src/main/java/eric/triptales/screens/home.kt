@@ -14,7 +14,7 @@ import eric.triptales.components.BottomNavigationBar
 @Composable
 fun HomeScreen(navController: NavController) {
     Scaffold(
-        topBar = { TopAppBar("Home", "main") },
+        topBar = { TopAppBar("Home", "main", navController) },
         bottomBar = { BottomNavigationBar("Home", navController) }
     ) { paddingValues ->
         Column(

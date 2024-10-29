@@ -22,7 +22,7 @@ import eric.triptales.components.MapScreen
 @Composable
 fun NearBySearchScreen(navController: NavController, placesViewModel: PlacesViewModel){
     Scaffold(
-        topBar = { TopAppBar("Search near by", "sub") },
+        topBar = { TopAppBar("Search near by", "sub", navController)},
         bottomBar = { BottomNavigationBar(selectedScreen = "Search", navController) }
     ) { paddingValues ->
         Column(
@@ -30,20 +30,9 @@ fun NearBySearchScreen(navController: NavController, placesViewModel: PlacesView
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-
-//            Box(
-//                modifier = Modifier
-//                    .fillMaxSize()
-//                    .background(Color.Gray),
-//                contentAlignment = Alignment.Center
-//            ) {
-//                if(places.isEmpty()){
-//                    Text("No results found", modifier = Modifier.fillMaxSize())
-//                } else {
-//                    ListOfPlaces(places = places,"nearby" , placesViewModel, navController)
-//                }
-//            }
-            MapScreen(placesViewModel = placesViewModel, navController = navController)
+            if(!placesViewModel.isFetchNearBy.value){
+                MapScreen(placesViewModel = placesViewModel, navController = navController)
+            }
         }
     }
 }

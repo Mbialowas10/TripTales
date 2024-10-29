@@ -18,9 +18,7 @@ fun ListOfPlaces(places: List<PlaceResult>, type: String, viewModel: PlacesViewM
         contentPadding = PaddingValues(16.dp)
     ) {
         items(places) { place ->
-            PlaceCard(place = place, type, onSearchNearbyClick = { placeId ->
-                viewModel.getPlaceDetail(placeId)
-            }, navController)
+            PlaceCard(place = place, type, viewModel, navController)
         }
     }
 }

@@ -71,13 +71,13 @@ dependencies {
     implementation(libs.play.services.maps) // Google Maps SDK
     implementation(libs.retrofit)          // Retrofit for API calls
     implementation(libs.converter.gson)     // Gson converter for Retrofit
-    implementation(libs.androidx.room.runtime)                // Room for local database
+    implementation(libs.androidx.room.runtime) // Room for local database
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.places)
-    implementation(libs.play.services.maps.v1802)
     implementation(libs.play.services.location)
     implementation(libs.androidx.room.ktx)
     implementation(libs.compose.material3)
     implementation(libs.compose.navigation)
+    implementation(libs.coil.compose)
 }

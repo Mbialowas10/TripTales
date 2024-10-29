@@ -1,6 +1,7 @@
 package eric.triptales.components
 
 import android.os.Bundle
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
@@ -20,6 +21,8 @@ import eric.triptales.viewmodel.PlacesViewModel
 @Composable
 fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
     val context = LocalContext.current
+
+    // use remember to retain its state across recompositions
     val mapView = remember {
         MapView(context).apply {
             onCreate(Bundle())
@@ -27,7 +30,7 @@ fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
         }
     }
 
-    // Store the center marker only once to prevent re-render
+    // Store the center marker
     var centerMarker: Marker? by remember { mutableStateOf(null) }
 
     // Store the selected place for rendering the PlaceCard, does not affect map rendering
@@ -35,8 +38,11 @@ fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
 
     // Check if `nearbyAttractions` is not null or empty before rendering the map
     val nearbyPlaces = placesViewModel.nearbyAttractions.value
+
     if (nearbyPlaces.isNotEmpty()) {
         Box(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
+            // Since Jetpack Compose does not have built-in support for GG Map
+            // => Need to use AndroidView to integrate the traditional MapView
             AndroidView(factory = { mapView }, update = {
                 it.getMapAsync { googleMap ->
                     // Initialize Google Maps
@@ -47,10 +53,11 @@ fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
                     val defaultLocation = if (targetPlace != null) {
                         LatLng(targetPlace.geometry.location.lat, targetPlace.geometry.location.lng)
                     } else {
-                        LatLng(48.8566, 2.3522) // Default to Paris coordinates
+                        // Default to Paris coordinates
+                        LatLng(48.8566, 2.3522)
                     }
 
-                    // Add or update center marker without re-rendering it on each click
+                    // Add center marker
                     if (centerMarker == null) {
                         centerMarker = googleMap.addMarker(
                             MarkerOptions()
@@ -65,25 +72,25 @@ fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
                     nearbyPlaces.forEach { place ->
                         val location = LatLng(place.geometry.location.lat, place.geometry.location.lng)
 
-                        // Add a default red marker for each nearby place
                         val marker = googleMap.addMarker(
                             MarkerOptions()
                                 .position(location)
                                 .title(place.name)
                                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
                         )
-
-                        // Set marker tag as the place for later identification
                         marker?.tag = place
                     }
 
                     // Handle marker click event without re-rendering the map or moving the camera
                     googleMap.setOnMarkerClickListener { marker: Marker ->
                         val place = marker.tag as? PlaceResult
-                        if (place != null) {
+
+                        if (place?.place_id != null) {
                             selectedPlace = place // Update the selected place for the PlaceCard
+                        } else {
+                            Log.e("MapScreen", "Marker clicked but placeId is null.")
                         }
-                        true // Prevent default camera movement
+                        true
                     }
                 }
             })
@@ -94,17 +101,13 @@ fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
                     PlaceCard(
                         place = place,
                         type = "nearby",
-                        onSearchNearbyClick = { placeId ->
-                            // Handle "Search Nearby" button click
-                            placesViewModel.getPlaceDetail(placeId)
-                        },
+                        placesViewModel,
                         navController = navController
                     )
                 }
             }
         }
     } else {
-        // Optionally, you could display a loading spinner or message if nearbyAttractions is empty
-        // or show a message indicating that there are no nearby places.
+        // Could show a message indicating that there are no nearby places.
     }
 }

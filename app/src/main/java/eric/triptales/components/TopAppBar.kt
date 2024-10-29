@@ -11,21 +11,22 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopAppBar(title:String, type: String) {
+fun TopAppBar(title:String, type: String, navController: NavController) {
     TopAppBar(
         title = {
             Text(text = title)
         },
         navigationIcon = {
             if(type === "main"){
-                IconButton(onClick = { }) {
+                IconButton(onClick = {  }) {
                     Icon(Icons.Default.Menu, contentDescription = "Menu")
                 }
             } else if(type === "sub") {
-                IconButton(onClick = { }) {
+                IconButton(onClick = { navController.popBackStack() }) {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft , contentDescription = "Back")
                 }
             }

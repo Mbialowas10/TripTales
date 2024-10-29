@@ -19,7 +19,7 @@ fun SearchScreen(navController: NavController, placesViewModel: PlacesViewModel)
     val places = placesViewModel.autocompleteResults.value
 
     Scaffold(
-        topBar = { TopAppBar("Search", "main") },
+        topBar = { TopAppBar("Search", "main", navController) },
         bottomBar = { BottomNavigationBar(selectedScreen = "Search", navController) }
     ) { paddingValues ->
         Column(

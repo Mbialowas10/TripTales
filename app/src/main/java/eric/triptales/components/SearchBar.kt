@@ -25,7 +25,7 @@ fun SearchBar(viewModel: PlacesViewModel) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(8.dp)
             .background(Color.White),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -45,7 +45,7 @@ fun SearchBar(viewModel: PlacesViewModel) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp),
-            singleLine = true
+            singleLine = true,
         )
     }
 }

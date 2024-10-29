@@ -6,6 +6,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import eric.triptales.api.Geometry
 import eric.triptales.api.Location
 import eric.triptales.api.PlaceDetailResult
@@ -23,14 +24,19 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
     val nearbyAttractions = mutableStateOf<List<PlaceResult>>(listOf())
     val autocompleteResults = mutableStateOf<List<PlaceResult>>(listOf())
 
+    // handle loading
+    val isFetchDetail = mutableStateOf(false)
+    val isFetchNearBy = mutableStateOf(false)
+
     // Search
     private val _searchTerm = mutableStateOf("")
     val searchQuery: State<String> = _searchTerm
 
     val targetPlace = mutableStateOf<PlaceDetailResult?>(null)
+    val isSaved = mutableStateOf(false)
 
     // return list of suggestions with place ID for further search
-    fun findPlaceAutocomplete(searchTerm: String, placeTypes: String = "establishment") {
+    fun findPlaceAutocomplete(searchTerm: String, placeTypes: String = "geocode") {
         _searchTerm.value = searchTerm
         viewModelScope.launch {
             try {
@@ -43,7 +49,7 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
                 autocompleteResults.value = response.predictions.map { prediction ->
                     PlaceResult(
                         name = prediction.description,
-                        placeId = prediction.place_id,
+                        place_id = prediction.place_id,
                         geometry = Geometry(Location(0.0, 0.0)),
                         rating = 0.0,
                         vicinity = prediction.description
@@ -55,48 +61,78 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun getPlaceDetail(placeId: String){
+    fun getPlaceDetail(placeId: String, isSearchNearBy: Boolean){
         viewModelScope.launch {
+            isFetchDetail.value = true
             try {
                 val response = RetrofitInstance.api.getPlaceDetails(
                     placeId = placeId,
                     apiKey = API_KEY
                 )
-                val latitude = response.result.geometry.location.lat
-                val longitude = response.result.geometry.location.lng
 
-                targetPlace.value = response.result
+                targetPlace.value = response.result.let { result ->
+                    PlaceDetailResult(
+                        place_id = result.place_id,
+                        name = result.name,
+                        geometry = result.geometry,
+                        rating = result.rating,
+                        formatted_address = result.formatted_address,
+                        types = result.types,
+                        formatted_phone_number = result.formatted_phone_number,
+                        website = result.website,
+                        photos = result.photos
+                    )
+                }
 
-                savePlaceToDB(response.result)
+                // savePlaceToDB(response.result)
+                if(isSearchNearBy){
+                    val latitude = response.result.geometry.location.lat
+                    val longitude = response.result.geometry.location.lng
 
-                // Now use latitude and longitude for your nearby search
-                getNearbyAttractions(latitude, longitude)
-
+                    getNearbyAttractions(latitude, longitude)
+                }
 
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                isFetchDetail.value = false
             }
         }
     }
 
     private fun getNearbyAttractions(lat: Double, lng: Double) {
         viewModelScope.launch {
+            isFetchNearBy.value = true
             try {
                 val response = RetrofitInstance.api.getNearbyAttractions(
                     location = "$lat,$lng",
-                    radius = 5000,
+                    radius = 10000,
                     apiKey = API_KEY
                 )
-                nearbyAttractions.value = response.results
+                nearbyAttractions.value = response.results.map { result ->
+                    PlaceResult(
+                        name = result.name,
+                        place_id = result.place_id,
+                        geometry = result.geometry,
+                        rating = result.rating,
+                        vicinity = result.vicinity
+                    )
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                isFetchNearBy.value = false
             }
         }
     }
 
-    fun savePlaceToDB(placeDetailResult: PlaceDetailResult){
+    fun saveTargetPlaceToDB(placeDetailResult: PlaceDetailResult){
         viewModelScope.launch {
             try {
+                val photoReferences = placeDetailResult.photos?.map { photo ->
+                    photo.photo_reference
+                } ?: listOf()
+
                 // Convert PlaceResult to PlaceEntity
                 val placeEntity = PlaceEntity(
                     id = placeDetailResult.place_id,
@@ -109,11 +145,62 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
                     formatted_phone_number = placeDetailResult.formatted_phone_number ?: "",
                     website = placeDetailResult.website ?: "",
                     is_saved = true,
+                    photos = photoReferences,
                     saved_at = System.currentTimeMillis()
                 )
 
                 // Insert the PlaceEntity into the Room database
                 placeDao.insertAll(listOf(placeEntity))
+                Log.e("PlacesViewModel", "Place saved to database: ${placeDetailResult.name}")
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private suspend fun getPlace(id: String): PlaceEntity? {
+        return try {
+            placeDao.getPlace(id)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    fun checkIfPlaceSaved(id: String){
+        viewModelScope.launch {
+            try{
+                getPlace(id)
+                isSaved.value = getPlace(id) != null
+            }catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun toggleSavePlace(placeDetailResult: PlaceDetailResult){
+        viewModelScope.launch {
+            try{
+                if(isSaved.value){
+                    deleteTargetPlaceFromDB(placeDetailResult)
+                    isSaved.value = false
+                    Log.e("PlacesViewModel", "Place deleted successfully: ${placeDetailResult.name}")
+                } else {
+                    saveTargetPlaceToDB(placeDetailResult)
+                    isSaved.value = true
+                    Log.e("PlacesViewModel", "Place saved successfully: ${placeDetailResult.name}")
+                }
+            }catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun deleteTargetPlaceFromDB(placeDetailResult: PlaceDetailResult){
+        viewModelScope.launch {
+            try {
+                placeDao.deleteById(placeDetailResult.place_id)
+                Log.e("PlacesViewModel", "Place deleted from database: ${placeDetailResult.name}")
             } catch (e: Exception) {
                 e.printStackTrace()
             }

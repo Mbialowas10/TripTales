@@ -7,7 +7,7 @@ data class PlacesResponse(
 
 data class PlaceResult(
     val name: String,
-    val placeId: String,
+    val place_id: String,
     val geometry: Geometry,
     val rating: Double?,
     val vicinity: String
@@ -27,7 +27,15 @@ data class PlaceDetailResult(
     val types: List<String>?,
     val formatted_phone_number: String?,
     val website: String?,
+    val photos: List<Photo>?
 )
+
+data class Photo(
+    val height: Number,
+    val width: Number,
+    val photo_reference: String,
+)
+
 data class Geometry(
     val location: Location
 )

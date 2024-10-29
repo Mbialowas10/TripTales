@@ -1,5 +1,6 @@
 package eric.triptales.components
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,11 +20,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import eric.triptales.api.PlaceResult
+import eric.triptales.viewmodel.PlacesViewModel
 
 @Composable
 fun PlaceCard(place: PlaceResult,
               type: String,
-              onSearchNearbyClick: (placeId: String) -> Unit,
+              viewModel: PlacesViewModel,
               navController: NavController) {
 
     Card(
@@ -53,26 +56,43 @@ fun PlaceCard(place: PlaceResult,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+            
+            if(type === "nearby"){
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Text(
+                    text = place.vicinity,
+                    fontSize = 12.sp,
+                    color = Color.LightGray,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             if(type === "autocomplete"){
                 Button(
                     onClick = {
-                        onSearchNearbyClick(place.placeId)
                         navController.navigate("nearbySearch")
+                        viewModel.getPlaceDetail(place.place_id, true)
                               } ,
                     modifier = Modifier.align(Alignment.End)
                 ) {
                     Text("Search Nearby")
                 }
+
             } else if(type === "nearby"){
                 Button(
-                    onClick = { onSearchNearbyClick(place.placeId) } ,
+                    onClick = {
+                        navController.navigate("placeDetail")
+                        viewModel.getPlaceDetail(place.place_id, false)
+                    },
                     modifier = Modifier.align(Alignment.End)
                 ) {
                     Text("See Detail")
                 }
+
+
             }
 
 

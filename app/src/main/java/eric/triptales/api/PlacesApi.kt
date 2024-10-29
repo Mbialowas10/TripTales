@@ -24,6 +24,5 @@ interface PlacesApi {
         @Query("place_id") placeId: String,
         @Query("key") apiKey: String
     ): PlaceDetailResponse
-
 }
 
