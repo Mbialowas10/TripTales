@@ -15,12 +15,8 @@ interface PlaceDao {
     @Query("DELETE FROM places WHERE id = :placeId")
     suspend fun deleteById(placeId: String)
 
-
     @Query("SELECT * FROM places WHERE id = :id")
     suspend fun getPlace(id: String): PlaceEntity
-
-    @Query("SELECT * FROM places WHERE latitude = :lat AND longitude = :lng")
-    suspend fun getPlacesByLocation(lat: Double, lng: Double): List<PlaceEntity>
 
     @Query("SELECT * FROM places")
     suspend fun getAllPlaces(): List<PlaceEntity>

@@ -4,9 +4,8 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 
-
 @Entity(
-    tableName = "notes",
+    tableName = "stories",
     foreignKeys = [
         ForeignKey(
             entity = PlaceEntity::class,
@@ -16,8 +15,9 @@ import androidx.room.PrimaryKey
         )
     ]
 )
-data class NoteEntity(
-    @PrimaryKey(autoGenerate = true) val note_id: Int = 0,
+data class StoryEntity(
+    @PrimaryKey(autoGenerate = true) val story_id: Int = 0,
+    val title: String,
     val content: String,
     val created_at: Long,
     val place_id: String

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "726872736480",
+    "project_id": "triptale-48f51",
+    "storage_bucket": "triptale-48f51.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:726872736480:android:285bb38089fc1107870685",
+        "android_client_info": {
+          "package_name": "eric.triptales"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxbivatmTVeGUUXAetim3NO3i41hGy2Xw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

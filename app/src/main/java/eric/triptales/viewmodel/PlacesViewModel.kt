@@ -1,12 +1,16 @@
 package eric.triptales.viewmodel
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import eric.triptales.api.Geometry
 import eric.triptales.api.Location
 import eric.triptales.api.PlaceDetailResult
@@ -14,15 +18,25 @@ import eric.triptales.api.PlaceResult
 import eric.triptales.api.RetrofitInstance
 import eric.triptales.database.AppDatabase
 import eric.triptales.database.PlaceEntity
+import eric.triptales.database.StoryEntity
+import eric.triptales.firebase.SavedPlaceEntity
+import eric.triptales.screens.deleteImagesForPlace
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 
 class PlacesViewModel(application: Application) : AndroidViewModel(application) {
     private val placeDao = AppDatabase.getDatabase(application).placeDao()
+    private val storyDao = AppDatabase.getDatabase(application).storyDao()
     private val API_KEY = "AIzaSyBQtniS0NCgJc5D5g_t_ke42u5_ttYn4Rw"
+
+    val db = FirebaseFirestore.getInstance()
 
     val nearbyAttractions = mutableStateOf<List<PlaceResult>>(listOf())
     val autocompleteResults = mutableStateOf<List<PlaceResult>>(listOf())
+    val savedPlaces = mutableStateOf<List<PlaceEntity>>(listOf())
+    val savedStories = mutableStateOf<List<StoryEntity>>(listOf())
 
     // handle loading
     val isFetchDetail = mutableStateOf(false)
@@ -33,6 +47,7 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
     val searchQuery: State<String> = _searchTerm
 
     val targetPlace = mutableStateOf<PlaceDetailResult?>(null)
+    val targetDBPlace = mutableStateOf<PlaceEntity?>(null)
     val isSaved = mutableStateOf(false)
 
     // return list of suggestions with place ID for further search
@@ -152,7 +167,27 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
 
                 // Insert the PlaceEntity into the Room database
                 placeDao.insertAll(listOf(placeEntity))
-                Log.e("PlacesViewModel", "Place saved to database: ${placeDetailResult.name}")
+
+                // Upload the place to Firebase
+                val localPlaceId = placeEntity.id
+                val localUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                val savedPlaceEntry = SavedPlaceEntity(
+                    placeId = localPlaceId,
+                    userId = localUserId,
+                    documentId = "${localPlaceId}_$localUserId",
+                    name = placeEntity.name,
+                    latitude = placeEntity.latitude,
+                    longitude = placeEntity.longitude,
+                    rating = placeEntity.rating,
+                    address = placeEntity.address,
+                    category = placeEntity.category,
+                    formattedPhoneNumber = placeEntity.formatted_phone_number,
+                    website = placeEntity.website,
+                    photos = placeEntity.photos,
+                )
+                db.collection("saved_places")
+                    .add(savedPlaceEntry)
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -201,10 +236,99 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             try {
                 placeDao.deleteById(placeDetailResult.place_id)
-                Log.e("PlacesViewModel", "Place deleted from database: ${placeDetailResult.name}")
+                val documentId = "${placeDetailResult.place_id}_${FirebaseAuth.getInstance().currentUser?.uid}"
+
+                db.collection("saved_places")
+                    .whereEqualTo("documentId",documentId)
+                    .get()
+                    .addOnSuccessListener { querySnapshot ->
+                        if (!querySnapshot.isEmpty) {
+                            // Get the actual document ID from the query result
+                            val localDocumentId = querySnapshot.documents[0].id
+
+                            // Delete the document using the actual document ID
+                            db.collection("saved_places")
+                                .document(localDocumentId)
+                                .delete()
+                        }
+                    }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+    }
+
+    fun deletePlaceFromDB(context: Context ,id: String){
+        viewModelScope.launch {
+            try {
+                placeDao.deleteById(id)
+                deleteImagesForPlace(context ,id)
+                getAllPlacesFromDB()
+                val documentId = "${id}_${FirebaseAuth.getInstance().currentUser?.uid}"
+                db.collection("saved_places")
+                    .whereEqualTo("documentId",documentId)
+                    .get()
+                    .addOnSuccessListener { querySnapshot ->
+                        if (!querySnapshot.isEmpty) {
+                            // Get the actual document ID from the query result
+                            val localDocumentId = querySnapshot.documents[0].id
+
+                            // Delete the document using the actual document ID
+                            db.collection("saved_places")
+                                .document(localDocumentId)
+                                .delete()
+                        }
+                    }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun getAllPlacesFromDB(){
+        viewModelScope.launch {
+            try{
+                savedPlaces.value = placeDao.getAllPlaces()
+            }catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun setTargetDBPlace(id: String){
+        viewModelScope.launch {
+            try{
+                targetDBPlace.value = getPlace(id)
+            }catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun getStoriesForPlace(placeId: String){
+        viewModelScope.launch(Dispatchers.IO) {
+            try{
+                savedStories.value = storyDao.getStoriesForPlace(placeId)
+
+            }catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun addStory(story: StoryEntity) {
+        viewModelScope.launch {
+            storyDao.insertStory(story)
+
+            getStoriesForPlace(story.place_id)
+        }
+    }
+
+    fun deleteStory(id: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            storyDao.deleteStory(id)
+
+            savedStories.value = storyDao.getStoriesForPlace(savedStories.value.firstOrNull()?.place_id ?: "")
         }
     }
 }
