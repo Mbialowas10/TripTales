@@ -299,7 +299,10 @@ fun StoriesScreen(viewModel: PlacesViewModel, navController: NavController){
                                     content = story.content,
                                     user_id = userId,
                                     username = username,
-                                    place_id = target?.id ?: ""
+                                    place_id = target?.id ?: "",
+                                    place_photos = target?.photos,
+                                    place_address = target?.address,
+                                    place_name = target?.name
                                 )
                                 postStoryToCommunity(storyEntry, onSuccess = {}, onFailure = {})
                             }

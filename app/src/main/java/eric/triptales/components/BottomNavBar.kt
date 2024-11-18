@@ -4,6 +4,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
@@ -37,6 +38,11 @@ fun BottomNavigationBar(selectedScreen: String, navController:NavController) {
             icon = { Icon(Icons.Default.Favorite, contentDescription = "Saved Places") },
             selected = selectedScreen == "Saved",
             onClick = { navController.navigate("saved") }
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.AccountCircle , contentDescription = "Account") },
+            selected = selectedScreen == "Account",
+            onClick = { navController.navigate("account") }
         )
     }
 }

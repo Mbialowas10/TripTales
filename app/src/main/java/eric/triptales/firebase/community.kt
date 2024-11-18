@@ -5,7 +5,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.FieldValue
 
-
 fun postStoryToCommunity(story: CommunityStory, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
     val db = FirebaseFirestore.getInstance()
     db.collection("community_stories")
@@ -49,5 +48,35 @@ fun likeCommunityStory(storyId: String, userId: String, onSuccess: () -> Unit, o
         .add(storyLikeEntry)
         .addOnFailureListener { exception ->
             onFailure(exception.message ?: "Error liking story")
+        }
+}
+
+fun fetchSavedStories(userId: String, onSuccess: (List<SavedPlaceEntity>) -> Unit, onFailure: (String) -> Unit) {
+    val db = FirebaseFirestore.getInstance()
+    db.collection("saved_places")
+        .whereEqualTo("userId", userId)
+        .get()
+        .addOnSuccessListener { documents ->
+            val places = documents.map { doc ->
+                SavedPlaceEntity(
+                    placeId = doc.getString("placeId") ?: "",
+                    userId = doc.getString("userId") ?: "",
+                    documentId = doc.id, // Firebase document ID
+                    name = doc.getString("name") ?: "",
+                    latitude = doc.getDouble("latitude") ?: 0.0,
+                    longitude = doc.getDouble("longitude") ?: 0.0,
+                    rating = doc.getDouble("rating"),
+                    address = doc.getString("address") ?: "",
+                    category = doc.get("category") as? List<String>,
+                    formattedPhoneNumber = doc.getString("formattedPhoneNumber"),
+                    website = doc.getString("website"),
+                    photos = doc.get("photos") as? List<String>,
+                    savedAt = doc.getLong("savedAt") ?: System.currentTimeMillis()
+                )
+            }
+            onSuccess(places)
+        }
+        .addOnFailureListener { exception ->
+            onFailure(exception.message ?: "Error fetching saved places")
         }
 }

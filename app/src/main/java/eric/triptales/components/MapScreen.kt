@@ -4,17 +4,27 @@ import android.os.Bundle
 import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.Polyline
+import com.google.android.gms.maps.model.PolylineOptions
 import eric.triptales.api.PlaceResult
 import eric.triptales.viewmodel.PlacesViewModel
 
@@ -65,6 +75,7 @@ fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
                                 .title("Center Location")
                                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
                         )
+                        centerMarker?.tag = "center_marker"
                         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, 17f))
                     }
 
@@ -82,14 +93,26 @@ fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
                     }
 
                     // Handle marker click event without re-rendering the map or moving the camera
-                    googleMap.setOnMarkerClickListener { marker: Marker ->
-                        val place = marker.tag as? PlaceResult
-
-                        if (place?.place_id != null) {
-                            selectedPlace = place // Update the selected place for the PlaceCard
+                    googleMap.setOnMarkerClickListener { marker ->
+                        if (marker.tag == "center_marker" && targetPlace != null) {
+                            // Show a placeholder PlaceResult or center marker details in PlaceCard
+                            selectedPlace = PlaceResult(
+                                place_id = targetPlace.place_id,
+                                name = targetPlace.name,
+                                geometry = targetPlace.geometry,
+                                vicinity = targetPlace.formatted_address ?: "",
+                                rating = targetPlace.rating
+                            )
                         } else {
-                            Log.e("MapScreen", "Marker clicked but placeId is null.")
+                            // Handle other markers' clicks
+                            val place = marker.tag as? PlaceResult
+                            if (place?.place_id != null) {
+                                selectedPlace = place
+                            } else {
+                                Log.e("MapScreen", "Marker clicked but placeId is null.")
+                            }
                         }
+
                         true
                     }
                 }

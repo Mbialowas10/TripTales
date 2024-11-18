@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
+import eric.triptales.screens.AccountScreen
 import eric.triptales.screens.LoginScreen
 import eric.triptales.screens.SavedPlacesScreen
 import eric.triptales.screens.NearBySearchScreen
@@ -50,5 +51,6 @@ fun App(placesViewModel: PlacesViewModel) {
 //        composable("blog") { BlogScreen(navController) }
         composable("saved") { SavedPlacesScreen(navController, viewModel = placesViewModel) }
         composable("stories") { StoriesScreen(viewModel = placesViewModel, navController) }
+        composable("account") { AccountScreen(navController)}
     }
 }
