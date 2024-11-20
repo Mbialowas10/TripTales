@@ -4,7 +4,7 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface PlacesApi {
-    @GET("nearbysearch/json")
+    @GET("place/nearbysearch/json")
     suspend fun getNearbyAttractions(
         @Query("location") location: String,
         @Query("radius") radius: Int,
@@ -12,14 +12,14 @@ interface PlacesApi {
         @Query("key") apiKey: String
     ): PlacesResponse
 
-    @GET("autocomplete/json")
+    @GET("place/autocomplete/json")
     suspend fun getAutocompleteResults(
         @Query("input") input: String,
         @Query("types") types: String,
         @Query("key") apiKey: String
     ): AutocompleteResponse
 
-    @GET("details/json")
+    @GET("place/details/json")
     suspend fun getPlaceDetails(
         @Query("place_id") placeId: String,
         @Query("key") apiKey: String

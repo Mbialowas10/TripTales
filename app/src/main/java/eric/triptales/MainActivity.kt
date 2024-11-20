@@ -18,7 +18,10 @@ import eric.triptales.screens.LoginScreen
 import eric.triptales.screens.SavedPlacesScreen
 import eric.triptales.screens.NearBySearchScreen
 import eric.triptales.screens.PlaceDetailScreen
+import eric.triptales.screens.PlacePickingScreen
+import eric.triptales.screens.PlannedTripScreen
 import eric.triptales.screens.StoriesScreen
+import eric.triptales.viewmodel.DirectionsViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,15 +31,16 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val placesViewModel: PlacesViewModel = viewModel()
+            val directionViewModel: DirectionsViewModel = viewModel()
 
 //            MapScreen(placesViewModel = placesViewModel)
-              App(placesViewModel)
+              App(placesViewModel, directionViewModel)
         }
     }
 }
 
 @Composable
-fun App(placesViewModel: PlacesViewModel) {
+fun App(placesViewModel: PlacesViewModel, directionViewModel: DirectionsViewModel) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "login") {
@@ -48,7 +52,8 @@ fun App(placesViewModel: PlacesViewModel) {
         composable("nearbySearch") { NearBySearchScreen(navController = navController,
             placesViewModel = placesViewModel)}
         composable("placeDetail") { PlaceDetailScreen(navController = navController, viewModel = placesViewModel)}
-//        composable("blog") { BlogScreen(navController) }
+        composable("plan") { PlannedTripScreen(navController = navController, viewModel = directionViewModel) }
+        composable("tripPicking") { PlacePickingScreen(directionViewModel = directionViewModel, navController) }
         composable("saved") { SavedPlacesScreen(navController, viewModel = placesViewModel) }
         composable("stories") { StoriesScreen(viewModel = placesViewModel, navController) }
         composable("account") { AccountScreen(navController)}

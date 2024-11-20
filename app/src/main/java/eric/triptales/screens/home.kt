@@ -33,6 +33,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import eric.triptales.components.BottomNavigationBar
 import eric.triptales.components.TopAppBar
+import eric.triptales.database.StoryEntity
 import eric.triptales.firebase.CommunityStory
 import eric.triptales.firebase.SavedPlaceEntity
 import eric.triptales.firebase.fetchSavedStories
@@ -182,6 +183,13 @@ fun HomeScreen(navController: NavController, viewModel: PlacesViewModel) {
                                     place_address = selectedPlace!!.address
                                 )
                                 postStoryToCommunity(story, onSuccess = {
+                                    val localStory = StoryEntity(
+                                        title = title,
+                                        content = content,
+                                        created_at = System.currentTimeMillis(),
+                                        place_id = selectedPlace!!.placeId,
+                                    )
+                                    viewModel.addStory(localStory)
                                     isLoading = false
                                     title = ""
                                     content = ""
