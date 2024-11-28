@@ -150,6 +150,7 @@ fun HomeScreen(navController: NavController, viewModel: PlacesViewModel) {
                             DropdownMenuItem(
                                 text = { Text(place.name) },
                                 onClick = {
+                                    Log.e("places", place.toString())
                                     selectedPlace = place
                                     isDropdownExpanded = false
                                 }

@@ -21,6 +21,7 @@ import eric.triptales.screens.PlaceDetailScreen
 import eric.triptales.screens.PlacePickingScreen
 import eric.triptales.screens.PlannedTripScreen
 import eric.triptales.screens.StoriesScreen
+import eric.triptales.screens.TripDetailScreen
 import eric.triptales.viewmodel.DirectionsViewModel
 
 class MainActivity : ComponentActivity() {
@@ -54,6 +55,7 @@ fun App(placesViewModel: PlacesViewModel, directionViewModel: DirectionsViewMode
         composable("placeDetail") { PlaceDetailScreen(navController = navController, viewModel = placesViewModel)}
         composable("plan") { PlannedTripScreen(navController = navController, viewModel = directionViewModel) }
         composable("tripPicking") { PlacePickingScreen(directionViewModel = directionViewModel, navController) }
+        composable("tripDetail") { TripDetailScreen( directionViewModel, navController) }
         composable("saved") { SavedPlacesScreen(navController, viewModel = placesViewModel) }
         composable("stories") { StoriesScreen(viewModel = placesViewModel, navController) }
         composable("account") { AccountScreen(navController)}
