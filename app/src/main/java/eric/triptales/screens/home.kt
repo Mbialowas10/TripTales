@@ -18,12 +18,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -34,14 +31,13 @@ import com.google.firebase.firestore.FirebaseFirestore
 import eric.triptales.components.BottomNavigationBar
 import eric.triptales.components.TopAppBar
 import eric.triptales.database.StoryEntity
-import eric.triptales.firebase.CommunityStory
-import eric.triptales.firebase.SavedPlaceEntity
-import eric.triptales.firebase.fetchSavedStories
-import eric.triptales.firebase.postStoryToCommunity
-import eric.triptales.firebase.getCommunityStories
-import eric.triptales.firebase.likeCommunityStory
+import eric.triptales.firebase.entity.CommunityStory
+import eric.triptales.firebase.entity.SavedPlaceEntity
+import eric.triptales.firebase.functions.fetchSavedStories
+import eric.triptales.firebase.functions.postStoryToCommunity
+import eric.triptales.firebase.functions.getCommunityStories
+import eric.triptales.firebase.functions.likeCommunityStory
 import eric.triptales.viewmodel.PlacesViewModel
-import org.intellij.lang.annotations.JdkConstants.HorizontalAlignment
 
 @Composable
 fun HomeScreen(navController: NavController, viewModel: PlacesViewModel) {

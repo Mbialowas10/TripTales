@@ -11,12 +11,14 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import eric.triptales.components.BottomNavigationBar
 import eric.triptales.components.SavedPlaceCard
+import eric.triptales.utility.parseCountry
 import eric.triptales.viewmodel.PlacesViewModel
 
 @Composable
 fun SavedPlacesScreen(navController: NavController ,viewModel: PlacesViewModel) {
     viewModel.getAllPlacesFromDB()
     val savedPlaces = viewModel.savedPlaces.value
+    val sortedPlaces = savedPlaces.groupBy { parseCountry(it.address) }
 
     Scaffold(
         topBar = {
@@ -38,13 +40,27 @@ fun SavedPlacesScreen(navController: NavController ,viewModel: PlacesViewModel) 
             if (savedPlaces.isEmpty()) {
                 Text("No saved places yet.", style = MaterialTheme.typography.bodyMedium)
             } else {
-                LazyColumn {
-                    items(savedPlaces) { place ->
-                        SavedPlaceCard(
-                            place = place,
-                            viewModel,
-                            navController
-                        )
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                ) {
+                    sortedPlaces.forEach { (country, countryPlaces) ->
+                        item {
+                            // Country Header
+                            Text(
+                                text = country,
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        // Places under this country
+                        items(countryPlaces) { place ->
+                            SavedPlaceCard(place = place, viewModel = viewModel, navController = navController)
+                        }
                     }
                 }
             }

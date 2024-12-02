@@ -8,7 +8,7 @@ interface DirectionsApiService {
     suspend fun getDirections(
         @Query("origin") origin: String,
         @Query("destination") destination: String,
-        @Query("waypoints=optimize:true") waypoints: String?,
+        @Query("waypoints") waypoints: String?,
         @Query("mode") mode: String,
         @Query("key") key: String
     ): DirectionsResponse

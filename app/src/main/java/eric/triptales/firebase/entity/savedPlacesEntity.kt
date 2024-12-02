@@ -1,4 +1,4 @@
-package eric.triptales.firebase
+package eric.triptales.firebase.entity
 
 data class SavedPlaceEntity(
     val placeId: String = "",

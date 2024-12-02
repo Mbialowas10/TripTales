@@ -2,14 +2,16 @@ package eric.triptales.viewmodel
 
 import android.app.Application
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.FirebaseFirestore
 import eric.triptales.api.DirectionsApiService
 import eric.triptales.api.DirectionsResponse
 import eric.triptales.api.Route
 import eric.triptales.api.RetrofitInstance
-import eric.triptales.firebase.PlannedTrip
-import eric.triptales.firebase.SavedPlaceEntity
+import eric.triptales.firebase.entity.PlannedTrip
+import eric.triptales.firebase.entity.SavedPlaceEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -26,15 +28,13 @@ import kotlinx.coroutines.coroutineScope
  */
 class DirectionsViewModel(application: Application) : AndroidViewModel(application) {
     private val API_KEY = "AIzaSyBQtniS0NCgJc5D5g_t_ke42u5_ttYn4Rw"
+    val tripDetailReadonly = mutableStateOf(false)
 
-    // StateFlow to hold the routes for all modes, exposed to the UI
-    private val _routesForModes = MutableStateFlow<Map<String, Route?>>(emptyMap())
-    val routesForModes: StateFlow<Map<String, Route?>> get() = _routesForModes
+    // StateFlow to hold routes and errors for each mode
+    private val _routesForModes = MutableStateFlow<Map<String, Pair<Route?, String?>>>(emptyMap())
+    val routesForModes: StateFlow<Map<String, Pair<Route?, String?>>> get() = _routesForModes
 
-    // Reference to the Directions API service for making network requests
-    private val directionsApi: DirectionsApiService = RetrofitInstance.directionsApi
-
-    // List to hold planned trips (local in-memory storage)
+    // List to hold planned trips
     val plannedTrips = mutableListOf<PlannedTrip>()
 
     // StateFlow to manage the selected origin and destination places
@@ -68,9 +68,7 @@ class DirectionsViewModel(application: Application) : AndroidViewModel(applicati
      */
     fun fetchRoutes(origin: String, destination: String, waypoints: List<String>) {
         viewModelScope.launch {
-            // Perform parallel API calls to fetch routes for all modes
-            val routes = fetchRoutesForAllModes(origin, destination, waypoints)
-            _routesForModes.value = routes
+            _routesForModes.value = fetchRoutesForAllModes(origin, destination, waypoints)
         }
     }
 
@@ -86,18 +84,20 @@ class DirectionsViewModel(application: Application) : AndroidViewModel(applicati
         origin: String,
         destination: String,
         waypoints: List<String>?,
-    ): Map<String, Route?> = coroutineScope {
-        // List of supported travel modes
+    ): Map<String, Pair<Route?, String?>> = coroutineScope {
         val modes = listOf("driving", "walking", "bicycling", "transit")
 
-        // Launch parallel API requests for each mode
         val requests = modes.associateWith { mode ->
             async {
-                fetchRoute(origin, destination, waypoints, mode)
+                try {
+                    val route = fetchRoute(origin, destination, waypoints, mode)
+                    route to null // Success: route with no error
+                } catch (e: Exception) {
+                    null to (e.message ?: "An unknown error occurred.") // Failure: no route with an error message
+                }
             }
         }
 
-        // Await all requests and collect results into a map
         requests.mapValues { (_, deferred) -> deferred.await() }
     }
 
@@ -116,11 +116,8 @@ class DirectionsViewModel(application: Application) : AndroidViewModel(applicati
         waypoints: List<String>?,
         mode: String,
     ): Route? {
-        // Convert waypoint list to a formatted string for the API
-        val waypointsString = waypoints?.joinToString("|") { "place_id:$it" } ?: ""
-
-        // Make API request to fetch directions
-        val response: DirectionsResponse = directionsApi.getDirections(
+        val waypointsString = waypoints?.joinToString("|") { "place_id:$it" }?.let { "optimize:true|$it" }
+        val response: DirectionsResponse = RetrofitInstance.directionsApi.getDirections(
             origin = "place_id:$origin",
             destination = "place_id:$destination",
             waypoints = waypointsString,
@@ -128,7 +125,41 @@ class DirectionsViewModel(application: Application) : AndroidViewModel(applicati
             key = API_KEY
         )
 
-        // Return the first route from the response, if available
-        return response.routes.firstOrNull()
+        return when (response.status) {
+            "OK" -> response.routes.firstOrNull()
+            "ZERO_RESULTS" -> throw Exception("No route found for mode: $mode.")
+            "INVALID_REQUEST" -> throw Exception("$mode mode does not support waypoints.")
+            else -> throw Exception("Error: ${response.status}")
+        }
     }
+
+    // Fetch planned trips from Firebase
+    fun fetchPlannedTrips(userId: String) {
+        val db = FirebaseFirestore.getInstance()
+        db.collection("planned_trips")
+            .whereEqualTo("userId", userId)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                plannedTrips.clear()
+                plannedTrips.addAll(snapshot.toObjects(PlannedTrip::class.java))
+            }
+            .addOnFailureListener { e ->
+                Log.e("DirectionsViewModel", "Error fetching planned trips: ${e.message}", e)
+            }
+    }
+
+    // Save a planned trip to Firebase
+    fun savePlannedTrip(trip: PlannedTrip) {
+        val db = FirebaseFirestore.getInstance()
+        db.collection("planned_trips")
+            .document(trip.tripId)
+            .set(trip)
+            .addOnSuccessListener {
+                Log.d("DirectionsViewModel", "Planned trip saved successfully!")
+            }
+            .addOnFailureListener { e ->
+                Log.e("DirectionsViewModel", "Error saving planned trip: ${e.message}", e)
+            }
+    }
+
 }

@@ -7,8 +7,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import eric.triptales.firebase.signInWithEmailPassword
-import eric.triptales.firebase.signUpWithEmailPassword
+import eric.triptales.firebase.functions.signInWithEmailPassword
+import eric.triptales.firebase.functions.signUpWithEmailPassword
 
 @Composable
 fun LoginScreen(onLoginSuccess: () -> Unit) {

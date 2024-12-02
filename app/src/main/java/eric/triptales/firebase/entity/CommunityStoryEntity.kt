@@ -1,4 +1,4 @@
-package eric.triptales.firebase
+package eric.triptales.firebase.entity
 
 data class CommunityStory(
     val id: String = "",

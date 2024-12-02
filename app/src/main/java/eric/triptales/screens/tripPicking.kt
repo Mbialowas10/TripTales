@@ -1,22 +1,24 @@
 package eric.triptales.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
 import eric.triptales.components.BottomNavigationBar
-import eric.triptales.firebase.SavedPlaceEntity
-import eric.triptales.firebase.fetchSavedStories
+import eric.triptales.components.SavedPlaceCard
+import eric.triptales.firebase.entity.SavedPlaceEntity
+import eric.triptales.firebase.functions.fetchSavedStories
+import eric.triptales.utility.parseCountry
 import eric.triptales.viewmodel.DirectionsViewModel
 
 @Composable
@@ -32,6 +34,12 @@ fun PlacePickingScreen(
     val remainingPlaces = remember {
         derivedStateOf {
             savedPlaces.filter { it !in selectedPlaces && it !in waypoints }
+        }
+    }
+
+    val selectedCountry by remember {
+        derivedStateOf {
+            selectedPlaces.firstOrNull()?.let { parseCountry(it.address) }
         }
     }
 
@@ -61,40 +69,51 @@ fun PlacePickingScreen(
                     .padding(vertical = 8.dp)
             ) {
                 item {
+                    // Origin Place Item
                     PlaceItem(
                         label = "Origin",
                         places = remainingPlaces.value,
                         selectedPlace = selectedPlaces.getOrNull(0),
                         onPlaceSelected = { place ->
-                            if (selectedPlaces.size >= 1) selectedPlaces[0] = place
-                            else selectedPlaces.add(place)
-                        }
+                            if (selectedPlaces.size > 0) {
+                                selectedPlaces[0] = place
+                            } else {
+                                selectedPlaces.add(place)
+                            }
+                        },
+                        selectedCountry ?: ""
                     )
                 }
 
                 items(waypoints.size) { index ->
+                    // Waypoint Place Items
                     PlaceItem(
                         label = "Waypoint ${index + 1}",
                         places = remainingPlaces.value,
                         selectedPlace = waypoints.getOrNull(index),
-                        onPlaceSelected = { place -> waypoints[index] = place }
+                        onPlaceSelected = { place -> waypoints[index] = place },
+                        selectedCountry ?: ""
                     )
                 }
 
                 item {
+                    // Destination Place Item
                     PlaceItem(
                         label = "Destination",
                         places = remainingPlaces.value,
                         selectedPlace = selectedPlaces.getOrNull(1),
                         onPlaceSelected = { place ->
-                            if (selectedPlaces.size >= 2) selectedPlaces[1] = place
-                            else selectedPlaces.add(place)
-                        }
+                            if (selectedPlaces.size > 1) {
+                                selectedPlaces[1] = place
+                            } else {
+                                selectedPlaces.add(place)
+                            }
+                        },
+                        selectedCountry ?: ""
                     )
                 }
-
-
             }
+
 
             Button(
                 onClick = { waypoints.add(SavedPlaceEntity(placeId = "", name = "Select Place")) },
@@ -113,6 +132,7 @@ fun PlacePickingScreen(
                         val waypointIds = waypoints.map { it.placeId }
                         directionViewModel.updateSelectedPlaces(selectedPlaces[0], selectedPlaces[1], waypoints)
                         directionViewModel.fetchRoutes(origin, destination, waypointIds)
+                        directionViewModel.tripDetailReadonly.value = false
                         navController.navigate("tripDetail")
                     }
                 },
@@ -132,11 +152,15 @@ fun PlaceItem(
     label: String,
     places: List<SavedPlaceEntity>,
     selectedPlace: SavedPlaceEntity?,
-    onPlaceSelected: (SavedPlaceEntity) -> Unit
+    onPlaceSelected: (SavedPlaceEntity) -> Unit,
+    selectedCountry: String
 ) {
     var isDropdownExpanded by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    // Group places by country
+    val sortedPlaces = places.groupBy { parseCountry(it.address) }
+
+    Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
         Text(
             text = label,
             modifier = Modifier.padding(start = 8.dp),
@@ -169,16 +193,71 @@ fun PlaceItem(
                 modifier = Modifier.fillMaxWidth(),
                 offset = DpOffset(x = 0.dp, y = 8.dp)
             ) {
-                places.forEach { place ->
-                    DropdownMenuItem(
-                        text = { Text(place.name) },
-                        onClick = {
-                            onPlaceSelected(place)
-                            isDropdownExpanded = false
-                        }
+                // Header Row with Cancel Button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Select $label",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f)
                     )
+                    IconButton(
+                        onClick = { isDropdownExpanded = false }, // Close dropdown
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close Dropdown"
+                        )
+                    }
+                }
+
+                sortedPlaces.forEach { (country, countryPlaces) ->
+                    // Country Header
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = country,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = if (country == selectedCountry)
+                                    MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface
+                            )
+                        },
+                        onClick = { } // No action for the header
+                    )
+
+                    // Places under this country
+                    countryPlaces.forEach { place ->
+                        DropdownMenuItem(
+                            text = { Text(place.name) },
+                            onClick = {
+                                onPlaceSelected(place)
+                                isDropdownExpanded = false
+                            }
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+
+
+/**
+ * Filters places by country. If the country is not null, only places from the selected country
+ * will be included.
+ */
+fun filterPlacesByCountry(places: List<SavedPlaceEntity>, country: String?): List<SavedPlaceEntity> {
+    return if (country != null) {
+        places.filter { parseCountry(it.address) == country }
+    } else {
+        places
     }
 }

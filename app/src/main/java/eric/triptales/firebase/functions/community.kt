@@ -1,9 +1,11 @@
-package eric.triptales.firebase
+package eric.triptales.firebase.functions
 
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.FieldValue
+import eric.triptales.firebase.entity.CommunityStory
+import eric.triptales.firebase.entity.SavedPlaceEntity
+import eric.triptales.firebase.entity.StoryLikes
 
 fun postStoryToCommunity(story: CommunityStory, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
     val db = FirebaseFirestore.getInstance()

@@ -1,7 +1,8 @@
 package eric.triptales.api
 
 data class DirectionsResponse(
-    val routes: List<Route>
+    val routes: List<Route>,
+    val status: String
 )
 
 data class Route(
@@ -22,6 +23,7 @@ data class Leg(
 data class Step (
     val distance: Distance,
     val duration: Duration,
+    val html_instructions: String,
     val start_location: LatLngLiteral,
     val end_location: LatLngLiteral,
     val travel_mode: String,

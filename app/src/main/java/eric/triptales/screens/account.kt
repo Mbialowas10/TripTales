@@ -9,9 +9,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.UserProfileChangeRequest
 import eric.triptales.components.BottomNavigationBar
-import eric.triptales.firebase.updateDisplayName
+import eric.triptales.firebase.functions.updateDisplayName
 
 @Composable
 fun AccountScreen(navController: NavController) {

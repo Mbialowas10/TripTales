@@ -1,22 +1,32 @@
 package eric.triptales.screens
 
 import android.os.Bundle
+import android.util.Log
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.model.*
+import com.google.firebase.auth.FirebaseAuth
 import eric.triptales.api.Route
 import eric.triptales.components.BottomNavigationBar
-import eric.triptales.firebase.SavedPlaceEntity
+import eric.triptales.firebase.entity.PlannedTrip
+import eric.triptales.firebase.entity.SavedPlaceEntity
 import eric.triptales.viewmodel.DirectionsViewModel
 
 /**
@@ -35,6 +45,7 @@ fun TripDetailScreen(
 ) {
     // Observes the available routes for all travel modes from the ViewModel.
     val routesForModes by directionsViewModel.routesForModes.collectAsState()
+    val userId = FirebaseAuth.getInstance().currentUser?.uid
 
     // List of transportation modes.
     val modes = listOf("driving", "walking", "bicycling", "transit")
@@ -42,16 +53,31 @@ fun TripDetailScreen(
     // Keeps track of the selected mode of transportation.
     var selectedMode by remember { mutableStateOf(modes.first()) }
 
-    // Fetches the route corresponding to the selected mode.
-    val selectedRoute = routesForModes[selectedMode]
+    // Fetch selected route and error for the current mode
+    val selectedResult = routesForModes[selectedMode]
+    val selectedRoute = selectedResult?.first
+    val errorMessage = selectedResult?.second
 
     // Observes the selected places and waypoints from the ViewModel.
     val selectedPlaces = directionsViewModel.selectedPlaces.collectAsState()
     val wayPointPlaces = directionsViewModel.waypoints.collectAsState()
 
+    // State to manage the visibility of the dialog
+    var showSaveDialog by remember { mutableStateOf(false) }
+    var customTripName by remember { mutableStateOf("") }
+
     Scaffold(
-        topBar = { eric.triptales.components.TopAppBar("Planning a Trip", "sub", navController) },
+        topBar = { eric.triptales.components.TopAppBar("Trip Detail", "sub", navController) },
         bottomBar = { BottomNavigationBar("Plan", navController) },
+        floatingActionButton = {
+            if (!directionsViewModel.tripDetailReadonly.value) {
+                    FloatingActionButton(onClick = {
+                        showSaveDialog = true
+                    }) {
+                        Icon(imageVector = Icons.Outlined.CheckCircle, contentDescription = "Save Trip")
+                    }
+            } else null
+        },
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -88,32 +114,89 @@ fun TripDetailScreen(
                 }
             }
 
-            // Displays the selected route's map and trip details if a route is available.
+            // Map Component
             selectedRoute?.let { route ->
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                    ) {
-                        TripDetailMap(route, selectedPlaces.value, wayPointPlaces.value)
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    RouteInfo(route, selectedMode)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    TripDetails(places = listOf("Origin", "Waypoint", "Destination"))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                ) {
+                    TripDetailMap(route, selectedPlaces.value, wayPointPlaces.value)
                 }
-            } ?: run {
-                // Displays a loading indicator if no route is available.
+            }
+
+            // Scrollable content for route information and trip details
+            errorMessage?.let {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp),
-                    contentAlignment = androidx.compose.ui.Alignment.Center
+                    contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
                 }
+            } ?: run {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    selectedRoute?.let { route ->
+                        Spacer(modifier = Modifier.height(16.dp))
+                        RouteInfo(route, selectedMode)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        RouteSteps(route)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        TripDetailsList(selectedPlaces.value, wayPointPlaces.value)
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+            }
+
+            if (showSaveDialog) {
+                AlertDialog(
+                    onDismissRequest = { showSaveDialog = false },
+                    title = { Text("Save Trip") },
+                    text = {
+                        Column {
+                            Text("Enter a custom name for the trip or skip to use the default name.")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = customTripName,
+                                onValueChange = { customTripName = it },
+                                label = { Text("Trip Name") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                val tripName = if (customTripName.isNotBlank()) customTripName else {
+                                    "${selectedPlaces.value.firstOrNull()?.name ?: "Unknown"} to ${selectedPlaces.value.lastOrNull()?.name ?: "Unknown"}"
+                                }
+                                saveTrip(directionsViewModel, selectedPlaces.value, wayPointPlaces.value, selectedRoute, userId, tripName)
+                                showSaveDialog = false
+                                navController.navigate("plan")
+                            }
+                        ) {
+                            Text("Save")
+                        }
+                    },
+                    dismissButton = {
+                        OutlinedButton(
+                            onClick = {
+                                val defaultName = "${selectedPlaces.value.firstOrNull()?.name ?: "Unknown"} to ${selectedPlaces.value.lastOrNull()?.name ?: "Unknown"}"
+                                saveTrip(directionsViewModel, selectedPlaces.value, wayPointPlaces.value, selectedRoute, userId, defaultName)
+                                showSaveDialog = false
+                                navController.navigate("plan")
+                            }
+                        ) {
+                            Text("Skip")
+                        }
+                    }
+                )
             }
         }
     }
@@ -189,9 +272,44 @@ fun TripDetailMap(route: Route, selectedPlaces: List<SavedPlaceEntity>, wayPoint
             // Moves the camera to the origin or a default location.
             val cameraPosition = selectedPlaces.getOrNull(0)?.let { LatLng(it.latitude, it.longitude) }
                 ?: LatLng(48.8566, 2.3522) // Defaults to Paris.
-            map.moveCamera(CameraUpdateFactory.newLatLngZoom(cameraPosition, 10f))
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(cameraPosition, 15f))
         }
     })
+}
+
+@Composable
+fun RouteSteps(route: Route) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Steps to Complete Route", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            route.legs.forEachIndexed { legIndex, leg ->
+                Text(
+                    text = "Leg ${legIndex + 1}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                leg.steps.forEachIndexed { stepIndex, step ->
+                    Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                        Text(
+                            text = "${stepIndex + 1}. ${step.html_instructions.replace("<[^>]*>".toRegex(), "")}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "Distance: ${step.distance.text} - Duration: ${step.duration.text}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -211,14 +329,32 @@ fun RouteInfo(route: Route, selectedMode: String) {
             Text("Route Information", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
             Text("Distance: ${route.legs.sumOf { it.distance.value }} meters")
-            Text("Duration: ${route.legs.sumOf { it.duration.value }} seconds")
+            Text("Duration: ${route.legs.sumOf { it.duration.value / 60 }} minutes")
             Text("Mode: $selectedMode")
         }
     }
 }
 
+/**
+ * Displays a dynamic list of trip places including origin, waypoints, and destination.
+ *
+ * @param selectedPlaces List of origin and destination places.
+ * @param waypoints List of waypoint places.
+ */
 @Composable
-fun TripDetails(places: List<String>) {
+fun TripDetailsList(
+    selectedPlaces: List<SavedPlaceEntity>,
+    waypoints: List<SavedPlaceEntity>
+) {
+    // Build a combined list of origin, waypoints, and destination
+    val places = buildList {
+        selectedPlaces.getOrNull(0)?.let { add(it to "Origin") } // Add origin
+        waypoints.forEachIndexed { index, waypoint ->
+            add(waypoint to "Waypoint ${index + 1}")
+        }
+        selectedPlaces.getOrNull(1)?.let { add(it to "Destination") } // Add destination
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -228,10 +364,31 @@ fun TripDetails(places: List<String>) {
             Text("Trip Places", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
 
-            places.forEachIndexed { index, place ->
-                Text("${index + 1}. $place", style = MaterialTheme.typography.bodyLarge)
-                Spacer(modifier = Modifier.height(4.dp))
+            // Display each place with its details
+            places.forEachIndexed { index, (place, label) ->
+                PlaceDetails(index + 1, label, place)
+                if (index != places.lastIndex) Spacer(modifier = Modifier.height(8.dp))
             }
+        }
+    }
+}
+
+/**
+ * Displays details of a single place.
+ *
+ * @param index The position of the place in the list.
+ * @param label The label (e.g., Origin, Waypoint 1, Destination).
+ * @param place The SavedPlaceEntity containing place details.
+ */
+@Composable
+fun PlaceDetails(index: Int, label: String, place: SavedPlaceEntity) {
+    Column {
+        Text("$index. $label: ${place.name}", style = MaterialTheme.typography.bodyLarge)
+        if (place.address.isNotEmpty()) {
+            Text("Address: ${place.address}", style = MaterialTheme.typography.bodyMedium)
+        }
+        if (!place.formattedPhoneNumber.isNullOrEmpty()) {
+            Text("Phone: ${place.formattedPhoneNumber}", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -276,4 +433,38 @@ fun String.decodePath(): List<LatLng> {
     }
 
     return poly
+}
+
+/**
+ * Saves the current trip to Firebase.
+ */
+private fun saveTrip(
+    viewModel: DirectionsViewModel,
+    selectedPlaces: List<SavedPlaceEntity>,
+    waypoints: List<SavedPlaceEntity>,
+    route: Route?,
+    userId: String?,
+    tripName: String
+) {
+    // Create a new PlannedTrip object
+    val trip = PlannedTrip(
+        tripId = System.currentTimeMillis().toString(),
+        userId = userId ?: "",
+        name = tripName,
+        origin = selectedPlaces.firstOrNull() ?: return,
+        destination = selectedPlaces.lastOrNull() ?: return,
+        waypoints = waypoints,
+        routeInfo = route?.let {
+            eric.triptales.firebase.entity.RouteInfo(
+                distance = it.legs.sumOf { leg -> leg.distance.value }
+                    .toString(),
+                duration = it.legs.sumOf { leg -> leg.duration.value }
+                    .toString(),
+                polyline = it.overview_polyline.points
+            )
+        }
+    )
+
+    // Save trip using the ViewModel
+    viewModel.savePlannedTrip(trip)
 }

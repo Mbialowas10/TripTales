@@ -1,4 +1,4 @@
-package eric.triptales.firebase
+package eric.triptales.firebase.functions
 
 import com.google.firebase.auth.FirebaseAuth
 

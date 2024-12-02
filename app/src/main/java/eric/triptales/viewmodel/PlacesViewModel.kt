@@ -7,8 +7,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavController
-import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import eric.triptales.api.Geometry
@@ -19,10 +17,9 @@ import eric.triptales.api.RetrofitInstance
 import eric.triptales.database.AppDatabase
 import eric.triptales.database.PlaceEntity
 import eric.triptales.database.StoryEntity
-import eric.triptales.firebase.SavedPlaceEntity
+import eric.triptales.firebase.entity.SavedPlaceEntity
 import eric.triptales.screens.deleteImagesForPlace
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 
@@ -122,7 +119,7 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
             try {
                 val response = RetrofitInstance.api.getNearbyAttractions(
                     location = "$lat,$lng",
-                    radius = 10000,
+                    radius = 50000,
                     apiKey = API_KEY
                 )
                 nearbyAttractions.value = response.results.map { result ->
