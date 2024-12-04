@@ -318,8 +318,8 @@ fun CommunityStoryItem(
                 .clip(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                 .clickable {
+                    viewModel.getPlaceDetail(story.place_id, true)
                     navController.navigate("placeDetail")
-                    viewModel.getPlaceDetail(story.place_id, false)
                 }
                 .padding(8.dp)
         ) {

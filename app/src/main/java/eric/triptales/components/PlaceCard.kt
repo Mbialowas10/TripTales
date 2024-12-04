@@ -85,7 +85,7 @@ fun PlaceCard(place: PlaceResult,
                 Button(
                     onClick = {
                         navController.navigate("placeDetail")
-                        viewModel.getPlaceDetail(place.place_id, false)
+                        viewModel.getPlaceDetail(place.place_id, true)
                     },
                     modifier = Modifier.align(Alignment.End)
                 ) {

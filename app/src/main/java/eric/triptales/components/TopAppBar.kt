@@ -22,9 +22,9 @@ fun TopAppBar(title:String, type: String, navController: NavController) {
         },
         navigationIcon = {
             if(type === "main"){
-                IconButton(onClick = {  }) {
-                    Icon(Icons.Default.Menu, contentDescription = "Menu")
-                }
+//                IconButton(onClick = {  }) {
+//                    Icon(Icons.Default.Menu, contentDescription = "Menu")
+//                }
             } else if(type === "sub") {
                 IconButton(onClick = { navController.popBackStack() }) {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft , contentDescription = "Back")

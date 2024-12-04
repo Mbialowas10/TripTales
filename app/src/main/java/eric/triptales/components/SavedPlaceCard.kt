@@ -88,7 +88,7 @@ fun SavedPlaceCard(place: PlaceEntity, viewModel: PlacesViewModel, navController
                 Button(
                     onClick = {
                         navController.navigate("placeDetail")
-                        viewModel.getPlaceDetail(place.id, false)
+                        viewModel.getPlaceDetail(place.id, true)
                     },
                     modifier = Modifier.height(36.dp)
                 ) {
