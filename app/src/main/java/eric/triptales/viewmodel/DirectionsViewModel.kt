@@ -6,12 +6,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
+import eric.triptales.BuildConfig
 import eric.triptales.api.DirectionsApiService
 import eric.triptales.api.DirectionsResponse
 import eric.triptales.api.Route
 import eric.triptales.api.RetrofitInstance
 import eric.triptales.firebase.entity.PlannedTrip
 import eric.triptales.firebase.entity.SavedPlaceEntity
+import eric.triptales.utility.ToastUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -27,7 +29,7 @@ import kotlinx.coroutines.coroutineScope
  * @param application The application context, required by AndroidViewModel.
  */
 class DirectionsViewModel(application: Application) : AndroidViewModel(application) {
-    private val API_KEY = "AIzaSyBQtniS0NCgJc5D5g_t_ke42u5_ttYn4Rw"
+    private val API_KEY = BuildConfig.GOOGLE_MAPS_API_KEY
     val tripDetailReadonly = mutableStateOf(false)
 
     // StateFlow to hold routes and errors for each mode
@@ -91,9 +93,9 @@ class DirectionsViewModel(application: Application) : AndroidViewModel(applicati
             async {
                 try {
                     val route = fetchRoute(origin, destination, waypoints, mode)
-                    route to null // Success: route with no error
+                    route to null
                 } catch (e: Exception) {
-                    null to (e.message ?: "An unknown error occurred.") // Failure: no route with an error message
+                    null to (e.message ?: "An unknown error occurred.")
                 }
             }
         }
@@ -133,7 +135,14 @@ class DirectionsViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    // Fetch planned trips from Firebase
+    /**
+     * Fetches all planned trips for a specific user from the Firestore database.
+     *
+     * Retrieves trips where the `userId` field matches the given `userId`. Updates the `plannedTrips`
+     * list in the ViewModel with the retrieved data.
+     *
+     * @param userId The ID of the user whose planned trips are to be fetched.
+     */
     fun fetchPlannedTrips(userId: String) {
         val db = FirebaseFirestore.getInstance()
         db.collection("planned_trips")
@@ -148,13 +157,22 @@ class DirectionsViewModel(application: Application) : AndroidViewModel(applicati
             }
     }
 
-    // Save a planned trip to Firebase
+    /**
+     * Saves a planned trip to the Firestore database.
+     *
+     * Writes the `PlannedTrip` object to the `planned_trips` collection in Firestore. Uses the trip's
+     * unique `tripId` as the document ID. Displays a success or error message via Toast and logs the
+     * result.
+     *
+     * @param trip The `PlannedTrip` object containing trip details to be saved.
+     */
     fun savePlannedTrip(trip: PlannedTrip) {
         val db = FirebaseFirestore.getInstance()
         db.collection("planned_trips")
             .document(trip.tripId)
             .set(trip)
             .addOnSuccessListener {
+                ToastUtil.showToast(null, "Planned trip saved successfully!")
                 Log.d("DirectionsViewModel", "Planned trip saved successfully!")
             }
             .addOnFailureListener { e ->

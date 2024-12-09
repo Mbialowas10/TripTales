@@ -16,6 +16,15 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 
+/**
+ * A composable function that displays a slider of images using bitmaps.
+ *
+ * This function uses the HorizontalPager from Accompanist to create a horizontally scrollable
+ * image slider with dot indicators to show the current page. If no images are provided, it
+ * displays a fallback message.
+ *
+ * @param images A list of [Bitmap] objects representing the images to display.
+ */
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun ImageSliderByBitmap(images: List<Bitmap>) {
@@ -28,6 +37,7 @@ fun ImageSliderByBitmap(images: List<Bitmap>) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (images.isNotEmpty()) {
+            // HorizontalPager to display images
             HorizontalPager(
                 count = images.size,
                 state = pagerState,
@@ -35,7 +45,11 @@ fun ImageSliderByBitmap(images: List<Bitmap>) {
                     .height(300.dp)
                     .fillMaxWidth()
             ) { page ->
-                // Display each image in the pager
+                /**
+                 * Displays each image in the pager.
+                 *
+                 * @param page The current page index.
+                 */
                 Image(
                     bitmap = images[page].asImageBitmap(),
                     contentDescription = "Place Image",
@@ -48,12 +62,17 @@ fun ImageSliderByBitmap(images: List<Bitmap>) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Dot Indicators for pager
+            // Dot indicators for the pager
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                /**
+                 * Repeats to create a dot indicator for each image.
+                 *
+                 * Highlights the dot for the currently selected page.
+                 */
                 repeat(images.size) { index ->
                     val isSelected = pagerState.currentPage == index
                     Box(
@@ -68,7 +87,7 @@ fun ImageSliderByBitmap(images: List<Bitmap>) {
                 }
             }
         } else {
-            // Fallback for when there are no images
+            // Fallback message when there are no images
             Box(
                 modifier = Modifier
                     .height(200.dp)
@@ -76,6 +95,9 @@ fun ImageSliderByBitmap(images: List<Bitmap>) {
                     .background(Color.Gray),
                 contentAlignment = Alignment.Center
             ) {
+                /**
+                 * Displays a message when no images are available.
+                 */
                 Text(text = "No Image Available")
             }
         }

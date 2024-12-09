@@ -14,8 +14,17 @@ import coil.compose.rememberAsyncImagePainter
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
+import eric.triptales.BuildConfig
 import eric.triptales.api.PlaceDetailResult
 
+/**
+ * Composable function for displaying a horizontally scrollable image slider for place details.
+ *
+ * This function uses the Accompanist Pager library to create a pager for navigating through
+ * images of a specific place, retrieved from the Google Places API.
+ *
+ * @param placeDetail The [PlaceDetailResult] object containing place details, including photos.
+ */
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun PlaceDetailImageSlider(placeDetail: PlaceDetailResult) {
@@ -29,6 +38,7 @@ fun PlaceDetailImageSlider(placeDetail: PlaceDetailResult) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (photos.isNotEmpty()) {
+            // Horizontal image pager
             HorizontalPager(
                 count = photos.size,
                 state = pagerState,
@@ -37,7 +47,7 @@ fun PlaceDetailImageSlider(placeDetail: PlaceDetailResult) {
                     .fillMaxWidth()
             ) { page ->
                 val photoReference = photos[page].photo_reference
-                val imageUrl = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=$photoReference&key=AIzaSyBQtniS0NCgJc5D5g_t_ke42u5_ttYn4Rw"
+                val imageUrl = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=$photoReference&key=${BuildConfig.GOOGLE_MAPS_API_KEY}"
 
                 Image(
                     painter = rememberAsyncImagePainter(imageUrl),
@@ -51,7 +61,7 @@ fun PlaceDetailImageSlider(placeDetail: PlaceDetailResult) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Dot Indicators
+            // Dot indicators for the current page
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,

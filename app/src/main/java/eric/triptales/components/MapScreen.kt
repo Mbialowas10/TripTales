@@ -19,20 +19,25 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.MapsInitializer
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.gms.maps.model.Polyline
-import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.gms.maps.model.*
 import eric.triptales.api.PlaceResult
 import eric.triptales.viewmodel.PlacesViewModel
 
+/**
+ * Displays a map screen with Google Maps, showing a target location and nearby attractions.
+ *
+ * This composable integrates Google Maps into Jetpack Compose using an [AndroidView].
+ * It handles marker placement for the target location and nearby places,
+ * and allows the user to select a place by clicking on a marker.
+ *
+ * @param placesViewModel The [PlacesViewModel] providing the target location and nearby places data.
+ * @param navController The [NavController] used for navigation actions.
+ */
 @Composable
 fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
     val context = LocalContext.current
 
-    // use remember to retain its state across recompositions
+    // Retain MapView state across recompositions
     val mapView = remember {
         MapView(context).apply {
             onCreate(Bundle())
@@ -40,34 +45,34 @@ fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
         }
     }
 
-    // Store the center marker
+    // Center marker representing the main location
     var centerMarker: Marker? by remember { mutableStateOf(null) }
 
-    // Store the selected place for rendering the PlaceCard, does not affect map rendering
+    // Currently selected place, used for rendering the PlaceCard
     var selectedPlace by remember { mutableStateOf<PlaceResult?>(null) }
 
-    // Check if `nearbyAttractions` is not null or empty before rendering the map
+    // List of nearby places from the ViewModel
     val nearbyPlaces = placesViewModel.nearbyAttractions.value
 
     if (nearbyPlaces.isNotEmpty()) {
-        Box(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
-            // Since Jetpack Compose does not have built-in support for GG Map
-            // => Need to use AndroidView to integrate the traditional MapView
+        Box(modifier = Modifier.fillMaxSize()) {
+            /**
+             * Integrate Google Maps into Jetpack Compose using AndroidView.
+             */
             AndroidView(factory = { mapView }, update = {
                 it.getMapAsync { googleMap ->
                     // Initialize Google Maps
                     MapsInitializer.initialize(context)
 
-                    // Get the center location
+                    // Determine the default location (targetPlace or default to Paris)
                     val targetPlace = placesViewModel.targetPlace.value
                     val defaultLocation = if (targetPlace != null) {
                         LatLng(targetPlace.geometry.location.lat, targetPlace.geometry.location.lng)
                     } else {
-                        // Default to Paris coordinates
-                        LatLng(48.8566, 2.3522)
+                        LatLng(48.8566, 2.3522) // Paris coordinates
                     }
 
-                    // Add center marker
+                    // Add the center marker to the map
                     if (centerMarker == null) {
                         centerMarker = googleMap.addMarker(
                             MarkerOptions()
@@ -79,10 +84,9 @@ fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
                         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, 17f))
                     }
 
-                    // Add red markers for nearby places
+                    // Add markers for nearby places
                     nearbyPlaces.forEach { place ->
                         val location = LatLng(place.geometry.location.lat, place.geometry.location.lng)
-
                         val marker = googleMap.addMarker(
                             MarkerOptions()
                                 .position(location)
@@ -92,10 +96,10 @@ fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
                         marker?.tag = place
                     }
 
-                    // Handle marker click event without re-rendering the map or moving the camera
+                    // Handle marker click events
                     googleMap.setOnMarkerClickListener { marker ->
                         if (marker.tag == "center_marker" && targetPlace != null) {
-                            // Show a placeholder PlaceResult or center marker details in PlaceCard
+                            // Handle center marker click
                             selectedPlace = PlaceResult(
                                 place_id = targetPlace.place_id,
                                 name = targetPlace.name,
@@ -104,7 +108,7 @@ fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
                                 rating = targetPlace.rating
                             )
                         } else {
-                            // Handle other markers' clicks
+                            // Handle other marker clicks
                             val place = marker.tag as? PlaceResult
                             if (place?.place_id != null) {
                                 selectedPlace = place
@@ -112,15 +116,14 @@ fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
                                 Log.e("MapScreen", "Marker clicked but placeId is null.")
                             }
                         }
-
-                        true
+                        true // Consume the event
                     }
                 }
             })
 
-            // Show the PlaceCard when a marker is clicked
+            // Show a PlaceCard when a marker is selected
             selectedPlace?.let { place ->
-                Box(modifier = androidx.compose.ui.Modifier.align(androidx.compose.ui.Alignment.BottomCenter)) {
+                Box(modifier = Modifier.align(Alignment.BottomCenter)) {
                     PlaceCard(
                         place = place,
                         type = "nearby",
@@ -131,6 +134,12 @@ fun MapScreen(placesViewModel: PlacesViewModel, navController: NavController) {
             }
         }
     } else {
-        // Could show a message indicating that there are no nearby places.
+        // Show a placeholder or message if there are no nearby places
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("No nearby places found", color = Color.Gray)
+        }
     }
 }

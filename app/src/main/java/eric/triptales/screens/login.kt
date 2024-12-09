@@ -10,6 +10,14 @@ import androidx.compose.ui.unit.dp
 import eric.triptales.firebase.functions.signInWithEmailPassword
 import eric.triptales.firebase.functions.signUpWithEmailPassword
 
+/**
+ * Displays the Login Screen for user authentication.
+ *
+ * The `LoginScreen` provides input fields for email and password, along with buttons for login
+ * and registration. It integrates with Firebase Authentication for user management.
+ *
+ * @param onLoginSuccess A callback invoked when the user successfully logs in or registers.
+ */
 @Composable
 fun LoginScreen(onLoginSuccess: () -> Unit) {
     var email by remember { mutableStateOf("") }

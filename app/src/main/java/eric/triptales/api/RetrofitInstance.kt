@@ -6,6 +6,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 
+/**
+ * Object responsible for creating and managing a Retrofit instance.
+ *
+ * This class centralizes the Retrofit configuration and provides a base for API calls.
+ */
 object RetrofitInstance {
     private const val BASE_URL = "https://maps.googleapis.com/maps/api/"
 

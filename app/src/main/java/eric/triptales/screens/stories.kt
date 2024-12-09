@@ -46,6 +46,7 @@ import eric.triptales.components.ImageSliderByBitmap
 import eric.triptales.database.StoryEntity
 import eric.triptales.firebase.entity.CommunityStory
 import eric.triptales.firebase.functions.postStoryToCommunity
+import eric.triptales.utility.ToastUtil
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
@@ -53,6 +54,16 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * Displays the Stories screen where users can view, share, delete, or create new stories
+ * for a specific place.
+ *
+ * This screen includes image handling for associating photos with stories,
+ * as well as tools for managing story entries.
+ *
+ * @param viewModel The [PlacesViewModel] to manage place and story data.
+ * @param navController The [NavController] for navigation actions.
+ */
 @Composable
 fun StoriesScreen(viewModel: PlacesViewModel, navController: NavController){
     val context = LocalContext.current
@@ -291,7 +302,9 @@ fun StoriesScreen(viewModel: PlacesViewModel, navController: NavController){
                                     place_address = target?.address,
                                     place_name = target?.name
                                 )
-                                postStoryToCommunity(storyEntry, onSuccess = {}, onFailure = {})
+                                postStoryToCommunity(storyEntry, onSuccess = {
+                                    ToastUtil.showToast(null, "Story shared successfully!")
+                                }, onFailure = {})
                             }
                         }) {
                             Text("Share")
@@ -361,9 +374,14 @@ fun StoriesScreen(viewModel: PlacesViewModel, navController: NavController){
     }
 }
 
-// The function is responsible for storing the Bitmap in the app’s private internal storage.
-// The filename includes both placeId and a timestamp to ensure each image has
-// a unique name, allowing multiple images per place.
+/**
+ * Saves a bitmap image to the app's internal storage.
+ *
+ * @param context The [Context] of the application.
+ * @param bitmap The [Bitmap] image to save.
+ * @param placeId The ID of the place to associate the image with.
+ * @return A Boolean indicating success or failure.
+ */
 fun saveImageLocally(context: Context, bitmap: Bitmap, placeId: String): Boolean {
     // Define unique filename
     val fileName = "saved_image_${placeId}_${System.currentTimeMillis()}.jpg"
@@ -389,8 +407,14 @@ fun saveImageLocally(context: Context, bitmap: Bitmap, placeId: String): Boolean
     }
 }
 
-// The function loads all images associated with a specific
-// placeId from internal storage, returning them as a list of Bitmap objects.
+
+/**
+ * Loads images associated with a place ID from internal storage.
+ *
+ * @param context The [Context] of the application.
+ * @param placeId The ID of the place whose images to load.
+ * @return A list of [Bitmap] images.
+ */
 fun loadImagesForPlace(context: Context, placeId: String): List<Bitmap> {
     // Gets the internal storage directory
     val filesDir = context.filesDir
@@ -407,9 +431,13 @@ fun loadImagesForPlace(context: Context, placeId: String): List<Bitmap> {
     }
 }
 
-// The function deletes all images associated
-// with a given placeId by filtering files in the internal storage
-// and deleting them individually.
+/**
+ * Deletes all images associated with a specific place ID.
+ *
+ * @param context The [Context] of the application.
+ * @param placeId The ID of the place whose images to delete.
+ * @return A Boolean indicating success or failure.
+ */
 fun deleteImagesForPlace(context: Context, placeId: String): Boolean {
     // Gets the internal storage directory
     val filesDir = context.filesDir

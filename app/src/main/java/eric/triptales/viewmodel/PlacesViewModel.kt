@@ -5,10 +5,12 @@ import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import eric.triptales.BuildConfig
 import eric.triptales.api.Geometry
 import eric.triptales.api.Location
 import eric.triptales.api.PlaceDetailResult
@@ -19,14 +21,23 @@ import eric.triptales.database.PlaceEntity
 import eric.triptales.database.StoryEntity
 import eric.triptales.firebase.entity.SavedPlaceEntity
 import eric.triptales.screens.deleteImagesForPlace
+import eric.triptales.utility.ToastUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-
+/**
+ * ViewModel for managing places and stories.
+ *
+ * Handles fetching, saving, and managing data for places and stories using
+ * both a Room database and Firebase Firestore. Provides methods for managing
+ * user interactions with places and stories.
+ *
+ * @param application The application instance used for initializing Room database.
+ */
 class PlacesViewModel(application: Application) : AndroidViewModel(application) {
     private val placeDao = AppDatabase.getDatabase(application).placeDao()
     private val storyDao = AppDatabase.getDatabase(application).storyDao()
-    private val API_KEY = "AIzaSyBQtniS0NCgJc5D5g_t_ke42u5_ttYn4Rw"
+    private val API_KEY = BuildConfig.GOOGLE_MAPS_API_KEY
 
     val db = FirebaseFirestore.getInstance()
 
@@ -47,7 +58,12 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
     val targetDBPlace = mutableStateOf<PlaceEntity?>(null)
     val isSaved = mutableStateOf(false)
 
-    // return list of suggestions with place ID for further search
+    /**
+     * Fetches autocomplete suggestions for places based on the search term.
+     *
+     * @param searchTerm The term to search for places.
+     * @param placeTypes The types of places to include in the results.
+     */
     fun findPlaceAutocomplete(searchTerm: String, placeTypes: String) {
         _searchTerm.value = searchTerm
         viewModelScope.launch {
@@ -73,6 +89,12 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /**
+     * Fetches details for a specific place and optionally fetches nearby attractions.
+     *
+     * @param placeId The ID of the place to fetch details for.
+     * @param isSearchNearBy Whether to fetch nearby attractions after fetching place details.
+     */
     fun getPlaceDetail(placeId: String, isSearchNearBy: Boolean){
         viewModelScope.launch {
             isFetchDetail.value = true
@@ -113,6 +135,12 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /**
+     * Fetches nearby attractions based on latitude and longitude.
+     *
+     * @param lat The latitude of the location.
+     * @param lng The longitude of the location.
+     */
     private fun getNearbyAttractions(lat: Double, lng: Double) {
         viewModelScope.launch {
             isFetchNearBy.value = true
@@ -139,6 +167,11 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /**
+     * Saves a place to the local Room database and uploads it to Firebase Firestore.
+     *
+     * @param placeDetailResult The details of the place to save.
+     */
     fun saveTargetPlaceToDB(placeDetailResult: PlaceDetailResult){
         viewModelScope.launch {
             try {
@@ -187,10 +220,18 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
 
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                ToastUtil.showToast(null, "Place saved successfully!")
             }
         }
     }
 
+    /**
+     * Fetches a place from the local database by its ID.
+     *
+     * @param id The ID of the place to fetch.
+     * @return The `PlaceEntity` object if found, or `null` if an exception occurs.
+     */
     private suspend fun getPlace(id: String): PlaceEntity? {
         return try {
             placeDao.getPlace(id)
@@ -200,6 +241,11 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /**
+     * Checks if a place is saved in the local database and updates the `isSaved` state.
+     *
+     * @param id The ID of the place to check.
+     */
     fun checkIfPlaceSaved(id: String){
         viewModelScope.launch {
             try{
@@ -211,16 +257,25 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /**
+     * Toggles the saved state of a place.
+     *
+     * If the place is already saved, it is deleted. Otherwise, it is saved to the local database and Firebase.
+     *
+     * @param placeDetailResult The details of the place to toggle.
+     */
     fun toggleSavePlace(placeDetailResult: PlaceDetailResult){
         viewModelScope.launch {
             try{
                 if(isSaved.value){
                     deleteTargetPlaceFromDB(placeDetailResult)
                     isSaved.value = false
+                    ToastUtil.showToast(null, "Place deleted successfully: ${placeDetailResult.name}")
                     Log.e("PlacesViewModel", "Place deleted successfully: ${placeDetailResult.name}")
                 } else {
                     saveTargetPlaceToDB(placeDetailResult)
                     isSaved.value = true
+                    ToastUtil.showToast(null, "Place saved successfully: ${placeDetailResult.name}")
                     Log.e("PlacesViewModel", "Place saved successfully: ${placeDetailResult.name}")
                 }
             }catch (e: Exception){
@@ -229,6 +284,11 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /**
+     * Deletes a place from the local database and Firebase Firestore.
+     *
+     * @param placeDetailResult The details of the place to delete.
+     */
     fun deleteTargetPlaceFromDB(placeDetailResult: PlaceDetailResult){
         viewModelScope.launch {
             try {
@@ -255,6 +315,12 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /**
+     * Deletes a place from the local database, Firebase Firestore, and associated images.
+     *
+     * @param context The application context for deleting images.
+     * @param id The ID of the place to delete.
+     */
     fun deletePlaceFromDB(context: Context ,id: String){
         viewModelScope.launch {
             try {
@@ -274,6 +340,8 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
                             db.collection("saved_places")
                                 .document(localDocumentId)
                                 .delete()
+
+                            ToastUtil.showToast(null, "Place unsaved successfully!")
                         }
                     }
             } catch (e: Exception) {
@@ -282,6 +350,9 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /**
+     * Fetches all saved places from the local database and updates the state.
+     */
     fun getAllPlacesFromDB(){
         viewModelScope.launch {
             try{
@@ -292,6 +363,11 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /**
+     * Sets the `targetDBPlace` state to the place retrieved from the local database.
+     *
+     * @param id The ID of the place to retrieve.
+     */
     fun setTargetDBPlace(id: String){
         viewModelScope.launch {
             try{
@@ -302,6 +378,12 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+
+    /**
+     * Fetches all stories associated with a specific place ID and updates the state.
+     *
+     * @param placeId The ID of the place whose stories are to be fetched.
+     */
     fun getStoriesForPlace(placeId: String){
         viewModelScope.launch(Dispatchers.IO) {
             try{
@@ -313,13 +395,29 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /**
+     * Adds a new story to the local database and updates the stories for the associated place.
+     *
+     * @param story The `StoryEntity` to be added.
+     */
     fun addStory(story: StoryEntity) {
         viewModelScope.launch {
-            storyDao.insertStory(story)
-
-            getStoriesForPlace(story.place_id)
+            try{
+                storyDao.insertStory(story)
+            } catch (e: Exception){
+                e.printStackTrace()
+            } finally {
+                getStoriesForPlace(story.place_id)
+                ToastUtil.showToast(null, "Story shared successfully!")
+            }
         }
     }
+
+    /**
+     * Deletes a story from the local database by its ID and updates the state.
+     *
+     * @param id The ID of the story to delete.
+     */
 
     fun deleteStory(id: Int) {
         viewModelScope.launch(Dispatchers.IO) {

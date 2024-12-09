@@ -21,6 +21,15 @@ import eric.triptales.firebase.functions.fetchSavedStories
 import eric.triptales.utility.parseCountry
 import eric.triptales.viewmodel.DirectionsViewModel
 
+/**
+ * Composable function for the Place Picking screen.
+ *
+ * Allows the user to select an origin, destination, and waypoints for planning a trip.
+ * Integrates with ViewModel to fetch and update selected places and fetch routes.
+ *
+ * @param directionViewModel ViewModel for managing direction data and logic.
+ * @param navController NavController for navigating to other screens.
+ */
 @Composable
 fun PlacePickingScreen(
     directionViewModel: DirectionsViewModel,
@@ -147,6 +156,18 @@ fun PlacePickingScreen(
     }
 }
 
+/**
+ * Composable function to display a dropdown for selecting a place.
+ *
+ * Groups places by their country and provides an interactive dropdown menu
+ * for selecting a place as an origin, waypoint, or destination.
+ *
+ * @param label Label for the dropdown (e.g., "Origin", "Destination").
+ * @param places List of available places to select from.
+ * @param selectedPlace The currently selected place (if any).
+ * @param onPlaceSelected Callback invoked when a place is selected.
+ * @param selectedCountry The currently selected country to highlight in the dropdown.
+ */
 @Composable
 fun PlaceItem(
     label: String,
@@ -249,15 +270,3 @@ fun PlaceItem(
 }
 
 
-
-/**
- * Filters places by country. If the country is not null, only places from the selected country
- * will be included.
- */
-fun filterPlacesByCountry(places: List<SavedPlaceEntity>, country: String?): List<SavedPlaceEntity> {
-    return if (country != null) {
-        places.filter { parseCountry(it.address) == country }
-    } else {
-        places
-    }
-}

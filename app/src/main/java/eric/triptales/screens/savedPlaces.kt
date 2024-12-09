@@ -14,36 +14,54 @@ import eric.triptales.components.SavedPlaceCard
 import eric.triptales.utility.parseCountry
 import eric.triptales.viewmodel.PlacesViewModel
 
+/**
+ * Displays the Saved Places screen where users can view their saved places grouped by country.
+ *
+ * This screen retrieves saved places from the database using the [PlacesViewModel], groups them
+ * by country, and displays each group along with its places. If there are no saved places, a
+ * message is displayed.
+ *
+ * @param navController The [NavController] for handling navigation actions.
+ * @param viewModel The [PlacesViewModel] for managing place-related data and operations.
+ */
 @Composable
-fun SavedPlacesScreen(navController: NavController ,viewModel: PlacesViewModel) {
+fun SavedPlacesScreen(navController: NavController, viewModel: PlacesViewModel) {
+    // Fetch saved places from the database
     viewModel.getAllPlacesFromDB()
     val savedPlaces = viewModel.savedPlaces.value
     val sortedPlaces = savedPlaces.groupBy { parseCountry(it.address) }
 
     Scaffold(
         topBar = {
+            // Top app bar with a title
             eric.triptales.components.TopAppBar(
                 title = "Saved Place",
                 type = "main",
                 navController = navController
             )
         },
-        bottomBar = { BottomNavigationBar(selectedScreen = "Saved", navController = navController) }
+        bottomBar = {
+            // Bottom navigation bar with "Saved" selected
+            BottomNavigationBar(selectedScreen = "Saved", navController = navController)
+        }
     ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
+                .fillMaxSize() // Occupy the full available space
+                .padding(padding) // Scaffold padding
+                .padding(16.dp), // Inner padding
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Display a message if no places are saved
             if (savedPlaces.isEmpty()) {
                 Text("No saved places yet.", style = MaterialTheme.typography.bodyMedium)
             } else {
+                // Display saved places grouped by country
                 LazyColumn(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxSize() // Fill the available vertical space
                 ) {
+                    // Iterate over grouped places
                     sortedPlaces.forEach { (country, countryPlaces) ->
                         item {
                             // Country Header
@@ -57,9 +75,13 @@ fun SavedPlacesScreen(navController: NavController ,viewModel: PlacesViewModel) 
                             )
                         }
 
-                        // Places under this country
+                        // List items for places under the country
                         items(countryPlaces) { place ->
-                            SavedPlaceCard(place = place, viewModel = viewModel, navController = navController)
+                            SavedPlaceCard(
+                                place = place,
+                                viewModel = viewModel,
+                                navController = navController
+                            )
                         }
                     }
                 }

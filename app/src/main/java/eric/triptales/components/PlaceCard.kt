@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,17 +21,29 @@ import androidx.navigation.NavController
 import eric.triptales.api.PlaceResult
 import eric.triptales.viewmodel.PlacesViewModel
 
+/**
+ * A composable function that displays a card for a place with options for navigation and actions.
+ *
+ * The `PlaceCard` function dynamically adjusts its content and buttons based on the provided `type`.
+ * It supports displaying details of a place and navigating to relevant screens based on user interaction.
+ *
+ * @param place The [PlaceResult] representing the place to display.
+ * @param type A [String] indicating the card type ("nearby" or "autocomplete") and its behavior.
+ * @param viewModel The [PlacesViewModel] for interacting with the place data.
+ * @param navController The [NavController] used for navigation actions.
+ */
 @Composable
-fun PlaceCard(place: PlaceResult,
-              type: String,
-              viewModel: PlacesViewModel,
-              navController: NavController) {
-
+fun PlaceCard(
+    place: PlaceResult,
+    type: String,
+    viewModel: PlacesViewModel,
+    navController: NavController
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(8.dp)
     ) {
         Column(
             modifier = Modifier
@@ -40,6 +51,7 @@ fun PlaceCard(place: PlaceResult,
                 .background(Color.White)
                 .padding(16.dp)
         ) {
+            // Header row with place name and icon
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -56,10 +68,10 @@ fun PlaceCard(place: PlaceResult,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-            
-            if(type === "nearby"){
+
+            // Show place vicinity for "nearby" type
+            if (type == "nearby") {
                 Spacer(modifier = Modifier.height(4.dp))
-                
                 Text(
                     text = place.vicinity,
                     fontSize = 12.sp,
@@ -70,32 +82,31 @@ fun PlaceCard(place: PlaceResult,
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if(type === "autocomplete"){
-                Button(
-                    onClick = {
-                        navController.navigate("nearbySearch")
-                        viewModel.getPlaceDetail(place.place_id, true)
-                              } ,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Search Nearby")
+            // Display action buttons based on card type
+            when (type) {
+                "autocomplete" -> {
+                    Button(
+                        onClick = {
+                            navController.navigate("nearbySearch")
+                            viewModel.getPlaceDetail(place.place_id, true)
+                        },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("Search Nearby")
+                    }
                 }
-
-            } else if(type === "nearby"){
-                Button(
-                    onClick = {
-                        navController.navigate("placeDetail")
-                        viewModel.getPlaceDetail(place.place_id, true)
-                    },
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("See Detail")
+                "nearby" -> {
+                    Button(
+                        onClick = {
+                            navController.navigate("placeDetail")
+                            viewModel.getPlaceDetail(place.place_id, true)
+                        },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("See Detail")
+                    }
                 }
-
-
             }
-
-
         }
     }
 }

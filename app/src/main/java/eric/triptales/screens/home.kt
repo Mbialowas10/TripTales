@@ -28,6 +28,7 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import eric.triptales.BuildConfig
 import eric.triptales.components.BottomNavigationBar
 import eric.triptales.components.TopAppBar
 import eric.triptales.database.StoryEntity
@@ -37,8 +38,15 @@ import eric.triptales.firebase.functions.fetchSavedStories
 import eric.triptales.firebase.functions.postStoryToCommunity
 import eric.triptales.firebase.functions.getCommunityStories
 import eric.triptales.firebase.functions.likeCommunityStory
+import eric.triptales.utility.ToastUtil
 import eric.triptales.viewmodel.PlacesViewModel
 
+/**
+ * Displays the Home Screen where users can view community stories, share a new story, or interact with existing stories.
+ *
+ * @param navController The [NavController] used for navigation between screens.
+ * @param viewModel The [PlacesViewModel] to handle place-related actions.
+ */
 @Composable
 fun HomeScreen(navController: NavController, viewModel: PlacesViewModel) {
     var stories by remember { mutableStateOf<List<CommunityStory>>(emptyList()) }
@@ -191,6 +199,7 @@ fun HomeScreen(navController: NavController, viewModel: PlacesViewModel) {
                                     title = ""
                                     content = ""
                                     fetchCommunityStories() // Refresh stories after posting
+                                    ToastUtil.showToast(null, "Story shared successfully!")
                                 }, onFailure = {
                                     isLoading = false
                                     errorMessage = it
@@ -249,7 +258,13 @@ fun HomeScreen(navController: NavController, viewModel: PlacesViewModel) {
     }
 }
 
-
+/**
+ * Displays a single community story item with options to like and navigate to the associated place.
+ *
+ * @param story The [CommunityStory] object to display.
+ * @param navController The [NavController] for navigation actions.
+ * @param viewModel The [PlacesViewModel] for place-related actions.
+ */
 @Composable
 fun CommunityStoryItem(
     story: CommunityStory,
@@ -327,7 +342,7 @@ fun CommunityStoryItem(
                 // Display the place image if available
                 story.place_photos?.firstOrNull()?.let { photo ->
                     Log.e("Image", photo)
-                    val photoUrl = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photo}&key=AIzaSyBQtniS0NCgJc5D5g_t_ke42u5_ttYn4Rw"
+                    val photoUrl = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photo}&key=${BuildConfig.GOOGLE_MAPS_API_KEY}"
 
                     Image(
                         painter = rememberAsyncImagePainter(photoUrl),

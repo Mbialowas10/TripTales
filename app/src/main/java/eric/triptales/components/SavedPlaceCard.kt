@@ -13,21 +13,41 @@ import androidx.navigation.NavController
 import eric.triptales.database.PlaceEntity
 import eric.triptales.viewmodel.PlacesViewModel
 
+/**
+ * A composable function that displays a card for a saved place.
+ *
+ * The `SavedPlaceCard` includes an image slider (if photos are available), place details,
+ * and action buttons for interacting with the place (e.g., unsaving, viewing stories, or navigating to details).
+ *
+ * @param place The [PlaceEntity] containing the saved place details.
+ * @param viewModel The [PlacesViewModel] used to manage saved places and interact with the database.
+ * @param navController The [NavController] used for navigation actions.
+ */
 @Composable
-fun SavedPlaceCard(place: PlaceEntity, viewModel: PlacesViewModel, navController: NavController) {
+fun SavedPlaceCard(
+    place: PlaceEntity,
+    viewModel: PlacesViewModel,
+    navController: NavController
+) {
     val context = LocalContext.current
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .padding(vertical = 8.dp), // Adds vertical spacing between cards
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp) // Adds a shadow to the card
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Display the image slider
+            // Display an image slider or a fallback message if no photos are available
             if (!place.photos.isNullOrEmpty()) {
+                /**
+                 * Displays a slider with images of the place using [PlaceEntityImageSlider].
+                 */
                 PlaceEntityImageSlider(place)
             } else {
+                /**
+                 * Displays a placeholder when no images are available.
+                 */
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -41,13 +61,14 @@ fun SavedPlaceCard(place: PlaceEntity, viewModel: PlacesViewModel, navController
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Display place name and address
+            // Display the name of the place
             Text(
                 text = place.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
 
+            // Display the address of the place, if available
             if (place.address.isNotEmpty()) {
                 Text(
                     text = place.address,
@@ -59,12 +80,14 @@ fun SavedPlaceCard(place: PlaceEntity, viewModel: PlacesViewModel, navController
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Action buttons
+            // Display action buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // "Unsaved" Button
+                /**
+                 * Button to remove the place from the saved list.
+                 */
                 Button(
                     onClick = { viewModel.deletePlaceFromDB(context, place.id) },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Gray),
@@ -73,7 +96,9 @@ fun SavedPlaceCard(place: PlaceEntity, viewModel: PlacesViewModel, navController
                     Text("Unsaved")
                 }
 
-                // "View Stories" Button
+                /**
+                 * Button to navigate to the "View Stories" screen for the place.
+                 */
                 Button(
                     onClick = {
                         viewModel.setTargetDBPlace(place.id)
@@ -84,7 +109,9 @@ fun SavedPlaceCard(place: PlaceEntity, viewModel: PlacesViewModel, navController
                     Text("View Stories")
                 }
 
-                // "Details" Button
+                /**
+                 * Button to navigate to the details screen for the place.
+                 */
                 Button(
                     onClick = {
                         navController.navigate("placeDetail")
@@ -98,4 +125,3 @@ fun SavedPlaceCard(place: PlaceEntity, viewModel: PlacesViewModel, navController
         }
     }
 }
-

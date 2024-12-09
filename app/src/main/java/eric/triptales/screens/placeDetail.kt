@@ -23,13 +23,22 @@ import eric.triptales.components.PlaceDetailImageSlider
 import eric.triptales.components.TopAppBar
 import eric.triptales.viewmodel.PlacesViewModel
 
+/**
+ * Displays the details of a selected place, including images, reviews, and nearby attractions.
+ *
+ * This screen fetches and displays place details provided by the [PlacesViewModel].
+ * It also allows users to save or unsave the place.
+ *
+ * @param navController The [NavController] for navigation actions.
+ * @param viewModel The [PlacesViewModel] for fetching and managing place data.
+ */
 @Composable
 fun PlaceDetailScreen(navController: NavController, viewModel: PlacesViewModel) {
-    val placeDetail = viewModel.targetPlace.value
-    val reviews = placeDetail?.reviews ?: emptyList()
-    val nearbyAttractions = viewModel.nearbyAttractions.value
+    val placeDetail = viewModel.targetPlace.value // Selected place details
+    val reviews = placeDetail?.reviews ?: emptyList() // Reviews for the selected place
+    val nearbyAttractions = viewModel.nearbyAttractions.value // Nearby attractions
     placeDetail?.place_id?.let {
-        viewModel.checkIfPlaceSaved(it)
+        viewModel.checkIfPlaceSaved(it) // Check if the place is saved
     }
 
     Scaffold(
@@ -41,16 +50,18 @@ fun PlaceDetailScreen(navController: NavController, viewModel: PlacesViewModel) 
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Place detail image slider
             item {
                 placeDetail?.let {
                     PlaceDetailImageSlider(placeDetail = it)
                 }
             }
 
+            // Place information
             item {
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Place Name Section
+                // Place name
                 Text(
                     text = placeDetail?.name ?: "No Name Available",
                     style = MaterialTheme.typography.headlineSmall,
@@ -58,7 +69,7 @@ fun PlaceDetailScreen(navController: NavController, viewModel: PlacesViewModel) 
                     modifier = Modifier.padding(16.dp)
                 )
 
-                // Place Address Section
+                // Place address
                 Text(
                     text = placeDetail?.formatted_address ?: "No Address Available",
                     modifier = Modifier.padding(horizontal = 16.dp)
@@ -66,7 +77,7 @@ fun PlaceDetailScreen(navController: NavController, viewModel: PlacesViewModel) 
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Place Rating and Phone
+                // Rating and phone number
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -85,7 +96,7 @@ fun PlaceDetailScreen(navController: NavController, viewModel: PlacesViewModel) 
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Place Website Section
+                // Website
                 Text(
                     text = "Website: ${placeDetail?.website ?: "N/A"}",
                     style = MaterialTheme.typography.bodyMedium,
@@ -94,7 +105,7 @@ fun PlaceDetailScreen(navController: NavController, viewModel: PlacesViewModel) 
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Save/Unsave Button
+                // Save/Unsave button
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -115,7 +126,7 @@ fun PlaceDetailScreen(navController: NavController, viewModel: PlacesViewModel) 
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Reviews Section
+            // Reviews section
             item {
                 Text(
                     text = "Reviews",
@@ -172,7 +183,7 @@ fun PlaceDetailScreen(navController: NavController, viewModel: PlacesViewModel) 
                 }
             }
 
-            // Nearby Attractions Section
+            // Nearby attractions section
             item {
                 Text(
                     text = "Nearby Attractions",
@@ -210,7 +221,7 @@ fun PlaceDetailScreen(navController: NavController, viewModel: PlacesViewModel) 
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        // "See Detail" Button
+                        // See detail button
                         Button(
                             onClick = {
                                 navController.navigate("placeDetail")
